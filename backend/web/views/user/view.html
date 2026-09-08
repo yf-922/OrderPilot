@@ -11,8 +11,7 @@
         <div class="panel-banner">
             <img src="/assets/img/product-badge.svg" alt="用户模块标识">
             <p>
-                当前页面用于验证用户登录和创建新用户。
-                登录时会校验数据库中的密码哈希值，新增用户时会先对密码做哈希再入库。
+            登录后 Token 会保存在当前浏览器会话中，商品和订单页面会自动使用该登录态访问接口。
             </p>
         </div>
 
@@ -44,11 +43,6 @@
 
         <form id="user-create-form" class="product-form" method="post" action="/user/create">
             <label>
-                <span>用户 ID</span>
-                <input type="number" name="id" id="create-user-id" min="1" placeholder="请输入用户 ID" required>
-            </label>
-
-            <label>
                 <span>昵称</span>
                 <input type="text" name="nickName" id="create-nick-name" placeholder="请输入昵称" required>
             </label>
@@ -68,5 +62,33 @@
             </div>
             <p id="user-create-message" class="form-message"></p>
         </form>
+    </aside>
+</section>
+
+<section class="content-grid user-tools">
+    <section class="panel">
+        <div class="panel-head">
+            <div>
+                <p class="eyebrow">My Profile</p>
+                <h2>我的资料</h2>
+            </div>
+            <span class="badge">登录后可编辑</span>
+        </div>
+        <form id="user-profile-form" class="product-form" method="post" action="/user/update">
+            <input type="hidden" name="id" id="profile-id">
+            <label><span>昵称</span><input type="text" name="nickName" id="profile-nick-name" required></label>
+            <label><span>用户名</span><input type="text" name="userName" id="profile-user-name" required></label>
+            <label><span>新密码（不修改也需填写当前密码）</span><input type="password" name="password" id="profile-password" placeholder="至少 6 位" required></label>
+            <div class="form-actions"><button class="submit-btn" type="submit">保存资料</button></div>
+            <p id="user-profile-message" class="form-message"></p>
+        </form>
+    </section>
+    <aside class="panel edit-panel">
+        <div class="panel-head"><div><p class="eyebrow">Session</p><h2>当前会话</h2></div></div>
+        <div class="product-form">
+            <p id="session-message" class="form-message">请先登录，登录成功后可以进入商品和订单页面。</p>
+            <a class="primary-link" href="/product/all">进入商品管理</a>
+            <a class="primary-link secondary-link" href="/order">进入订单管理</a>
+        </div>
     </aside>
 </section>

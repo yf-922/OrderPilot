@@ -5,14 +5,13 @@
                 <p class="eyebrow">Product Overview</p>
                 <h2>商品管理总览</h2>
             </div>
-            <span class="badge">当前共 {{ len .products }} 个商品</span>
+            <span id="product-count" class="badge">当前共 {{ len .products }} 个商品</span>
         </div>
 
         <div class="panel-banner">
             <img src="/assets/img/product-badge.svg" alt="商品管理标识">
             <p>
-                当前页面展示商品列表，并支持按照现有接口更新商品信息。
-                图片地址会显示缩略图和可点击链接，商品链接也可以直接跳转访问。
+                登录后可以新增、编辑、删除商品；所有写操作都会携带 Bearer Token 走同一套后端鉴权与缓存失效逻辑。
             </p>
         </div>
 
@@ -78,6 +77,7 @@
                                 data-url="{{ .ProductUrl }}">
                             编辑
                         </button>
+                        <button class="action-btn danger-btn js-delete-product" type="button" data-id="{{ .ID }}" data-name="{{ .ProductName }}">删除</button>
                     </td>
                 </tr>
                 {{ else }}
@@ -96,8 +96,8 @@
     <aside class="panel edit-panel">
         <div class="panel-head">
             <div>
-                <p class="eyebrow">Current Capability</p>
-                <h2>按现有逻辑修改商品</h2>
+                <p class="eyebrow">Product Editor</p>
+                <h2>新增或编辑商品</h2>
             </div>
         </div>
 
@@ -131,6 +131,17 @@
                 <button class="submit-btn" type="submit">提交修改</button>
             </div>
             <p id="form-message" class="form-message"></p>
+        </form>
+        <div class="product-form form-separator">
+            <button id="show-create-product" class="action-btn" type="button">切换到新增商品</button>
+        </div>
+        <form id="product-create-form" class="product-form" method="post" action="/product/create" hidden>
+            <label><span>商品名称</span><input type="text" name="productName" required></label>
+            <label><span>初始库存</span><input type="number" name="productNum" min="0" value="0" required></label>
+            <label><span>商品图片地址</span><input type="url" name="productImage" placeholder="https://example.com/image.png" required></label>
+            <label><span>商品链接</span><input type="url" name="productUrl" placeholder="https://example.com/product" required></label>
+            <div class="form-actions"><button class="submit-btn" type="submit">创建商品</button></div>
+            <p id="product-create-message" class="form-message"></p>
         </form>
     </aside>
 </section>

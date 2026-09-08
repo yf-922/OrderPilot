@@ -58,6 +58,15 @@ func AuthenticatedUserID(ctx iris.Context) (int64, bool) {
 
 // RequireAuth protects a route group using the Bearer token issued at login.
 func RequireAuth(ctx iris.Context) {
+	// 页面入口允许匿名打开，页面加载后由前端使用登录态调用受保护 API。
+	// 业务 JSON 接口仍然必须携带 Bearer Token，避免把页面可访问误变成数据可访问。
+	if ctx.Method() == "GET" && strings.Contains(ctx.GetHeader("Accept"), "text/html") {
+		path := ctx.Path()
+		if path == "/product/all" || path == "/order" {
+			ctx.Next()
+			return
+		}
+	}
 	if _, ok := AuthenticatedUserID(ctx); !ok {
 		ctx.StatusCode(iris.StatusUnauthorized)
 		_ = ctx.JSON(NewFailResult("authorization required"))

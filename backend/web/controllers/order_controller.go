@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/kataras/iris/v12"
+	"github.com/kataras/iris/v12/mvc"
 )
 
 type OrderController struct {
@@ -39,8 +40,11 @@ func (o *OrderController) GetList() {
 	_ = o.Ctx.JSON(common.NewSuccessResult("ok", iris.Map{"items": orders, "page": page, "pageSize": pageSize, "total": total}))
 }
 
-func (o *OrderController) Get() {
-	o.GetList()
+func (o *OrderController) Get() mvc.View {
+	return mvc.View{
+		Name: "order/view.html",
+		Data: iris.Map{"order": []map[string]any{}},
+	}
 }
 
 func (o *OrderController) PostCreate() {

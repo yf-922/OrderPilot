@@ -2,92 +2,35 @@
     <section class="panel">
         <div class="panel-head">
             <div>
-                <p class="eyebrow">Order Overview</p>
-                <h2>订单管理总览</h2>
+                <p class="eyebrow">My Orders</p>
+                <h2>我的订单</h2>
             </div>
-            <span class="badge">当前共 {{ len .order }} 条订单</span>
+            <span id="order-count" class="badge">登录后加载</span>
         </div>
-
         <div class="panel-banner">
             <img src="/assets/img/product-badge.svg" alt="订单管理标识">
-            <p>
-                当前页面展示订单列表及其关联的商品信息。
-                页面中的商品名称、图片和链接来自订单表与商品表的关联查询结果。
-            </p>
+            <p>订单数据仅通过当前登录用户的 Token 查询。待处理订单可以确认或取消，取消后库存会由后端事务自动恢复。</p>
         </div>
-
         <div class="table-wrap">
             <table class="product-table">
-                <thead>
-                <tr>
-                    <th>订单 ID</th>
-                    <th>用户 ID</th>
-                    <th>商品 ID</th>
-                    <th>订单状态</th>
-                    <th>商品名称</th>
-                    <th>商品图片</th>
-                    <th>商品链接</th>
-                </tr>
-                </thead>
-                <tbody>
-                {{ range $id, $item := .order }}
-                <tr>
-                    <td>{{ index $item "ID" }}</td>
-                    <td>{{ index $item "userID" }}</td>
-                    <td>{{ index $item "productID" }}</td>
-                    <td>
-                        {{ if eq (index $item "orderStatus") "0" }}
-                        <span class="badge">待处理</span>
-                        {{ else if eq (index $item "orderStatus") "1" }}
-                        <span class="badge">已成功</span>
-                        {{ else }}
-                        <span class="badge">已失败</span>
-                        {{ end }}
-                    </td>
-                    <td>{{ index $item "productName" }}</td>
-                    <td class="cell-break">
-                        {{ $image := index $item "productImage" }}
-                        {{ if $image }}
-                        <a href="{{ $image }}" target="_blank" rel="noreferrer">查看图片</a>
-                        {{ else }}
-                        暂无图片
-                        {{ end }}
-                    </td>
-                    <td class="cell-break">
-                        {{ $url := index $item "productUrl" }}
-                        {{ if $url }}
-                        <a href="{{ $url }}" target="_blank" rel="noreferrer">查看链接</a>
-                        {{ else }}
-                        暂无链接
-                        {{ end }}
-                    </td>
-                </tr>
-                {{ else }}
-                <tr>
-                    <td colspan="7" class="empty-row">
-                        <img class="empty-illustration" src="/assets/img/empty-product.svg" alt="暂无订单">
-                        <span>当前还没有订单数据</span>
-                    </td>
-                </tr>
-                {{ end }}
-                </tbody>
+                <thead><tr><th>订单 ID</th><th>商品 ID</th><th>数量</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody id="order-table-body"><tr><td colspan="5" class="empty-row">请先登录以加载订单。</td></tr></tbody>
             </table>
         </div>
     </section>
-
     <aside class="panel edit-panel">
-        <div class="panel-head">
-            <div>
-                <p class="eyebrow">Order Status</p>
-                <h2>订单状态说明</h2>
-            </div>
-        </div>
-
-        <div class="product-form">
-            <p class="form-message"><code>0</code> 表示等待处理，对应常量 <code>OrderWait</code></p>
-            <p class="form-message"><code>1</code> 表示订单成功，对应常量 <code>OrederSuccess</code></p>
-            <p class="form-message"><code>2</code> 表示订单失败，对应常量 <code>OrderFailed</code></p>
-            <p class="form-message">当前页面主要用于查看订单和商品关联展示信息，暂未提供订单编辑表单。</p>
+        <div class="panel-head"><div><p class="eyebrow">Create Order</p><h2>创建订单</h2></div></div>
+        <form id="order-create-form" class="product-form" method="post" action="/order/create">
+            <label><span>商品</span><select id="order-product-id" name="productID" required><option value="">登录后加载商品</option></select></label>
+            <label><span>购买数量</span><input type="number" name="quantity" min="1" value="1" required></label>
+            <input type="hidden" name="userID" id="order-user-id">
+            <input type="hidden" name="orderStatus" value="0">
+            <div class="form-actions"><button class="submit-btn" type="submit">创建待处理订单</button></div>
+            <p id="order-create-message" class="form-message"></p>
+        </form>
+        <div class="product-form form-separator">
+            <p class="form-message">每次下单自动生成独立幂等键；同一次请求重试不会重复扣库存。</p>
+            <button id="order-refresh" class="action-btn" type="button">刷新订单</button>
         </div>
     </aside>
 </section>

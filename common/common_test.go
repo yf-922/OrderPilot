@@ -64,6 +64,17 @@ func TestRequestMiddlewareAndAuth(t *testing.T) {
 	e.GET("/private").WithHeader("Authorization", "Bearer "+IssueToken(42)).Expect().Status(iris.StatusOK).Body().Contains("\"userId\":42")
 }
 
+func TestRequireAuthAllowsOnlyDocumentShellRoutes(t *testing.T) {
+	app := iris.New()
+	app.Get("/order", RequireAuth, func(ctx iris.Context) { _, _ = ctx.WriteString("order page") })
+	app.Get("/product/all", RequireAuth, func(ctx iris.Context) { _, _ = ctx.WriteString("product page") })
+	app.Get("/product/list", RequireAuth, func(ctx iris.Context) { _, _ = ctx.WriteString("product data") })
+	e := httptest.New(t, app)
+	e.GET("/order").WithHeader("Accept", "text/html").Expect().Status(iris.StatusOK).Body().IsEqual("order page")
+	e.GET("/product/all").WithHeader("Accept", "text/html").Expect().Status(iris.StatusOK).Body().IsEqual("product page")
+	e.GET("/product/list").WithHeader("Accept", "text/html").Expect().Status(iris.StatusUnauthorized)
+}
+
 func TestFormBuilders(t *testing.T) {
 	app := iris.New()
 	app.Post("/product", func(ctx iris.Context) {
