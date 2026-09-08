@@ -31,6 +31,7 @@ tests/          接口测试用例、冒烟测试脚本和测试报告
 - 查询能力：商品分页/关键词搜索、用户维度订单分页查询。
 - 测试：参数校验、鉴权、幂等、状态流转、取消返库和并发防超卖。
 - 可观测性：请求 ID、JSON 访问日志、存活/就绪探针和安全响应头。
+- 安全边界：请求体大小限制、受校验的 Request ID、幂等键参数冲突检测和统一 JSON 响应封装。
 
 ## 运行方式
 
@@ -63,7 +64,7 @@ make up
 make integration
 ```
 
-覆盖率文件输出为 `coverage.out`，并发/数据库集成测试默认只在显式设置 `INTEGRATION_TEST=1` 时执行。
+覆盖率文件输出为 `coverage.out`（已加入 `.gitignore`），并发/数据库集成测试默认只在显式设置 `INTEGRATION_TEST=1` 时执行。
 
 项目默认从环境变量读取 MySQL 和 Redis 配置；数据库结构和演示数据位于 `db/schema.sql`、`db/seed.sql`。
 
@@ -101,7 +102,7 @@ python tests/api_smoke_test.py
 详细用例和测试报告见：
 
 - `tests/api_test_cases.md`
-- `tests/TEST_REPORT.md`
+- `tests/test_report.md`
 
 ## CI 说明
 

@@ -19,7 +19,7 @@ const (
 type IProductService interface {
 	GetProductById(int64) (*datamodels.Product, error)
 	GetProductAll() ([]*datamodels.Product, error)
-	DeleteProductById(int64) bool
+	DeleteProductById(int64) error
 	InsertProduct(product *datamodels.Product) (int64, error)
 	UpdateProduct(product *datamodels.Product) error
 	InvalidateCache()
@@ -97,12 +97,12 @@ func (p *ProductService) GetProductAll() ([]*datamodels.Product, error) {
 }
 
 // DeleteProductById 按 ID 删除商品。
-func (p *ProductService) DeleteProductById(id int64) bool {
-	ok := p.productRepository.Delete(id)
-	if ok {
-		p.invalidateProductAllCache()
+func (p *ProductService) DeleteProductById(id int64) error {
+	if err := p.productRepository.Delete(id); err != nil {
+		return err
 	}
-	return ok
+	p.invalidateProductAllCache()
+	return nil
 }
 
 // InsertProduct 新增商品。

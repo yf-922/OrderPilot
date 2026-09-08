@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", function () {
             })
                 .then(function (result) {
                     if (result.success) {
-                        lib.setMessage("user-login-message", "登录校验通过，用户：" + result.user.userName, "success");
+                        lib.setMessage("user-login-message", "登录校验通过，用户：" + result.data.userName, "success");
                         return;
                     }
 
@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
             })
                 .then(function (result) {
                     if (result.success) {
-                        lib.setMessage("user-create-message", "用户创建成功：" + result.user.userName, "success");
+                        lib.setMessage("user-create-message", "用户创建成功：" + result.data.userName, "success");
                         createForm.reset();
                         return;
                     }

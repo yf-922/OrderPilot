@@ -10,6 +10,8 @@ import (
 var ErrOrderUserNotFound = errors.New("user not found")
 var ErrOrderProductNotFound = errors.New("product not found")
 var ErrOrderInsufficientStock = errors.New("insufficient stock")
+var ErrOrderIdempotencyConflict = repositories.ErrIdempotencyConflict
+var ErrInvalidOrder = errors.New("invalid order request")
 
 // IOrderService 定义订单业务层对外提供的方法。
 type IOrderService interface {
@@ -71,14 +73,14 @@ type OrderService struct {
 
 // InsertOrder 新增订单。
 func (o *OrderService) InsertOrder(ctx context.Context, order *datamodels.Order) (int64, error) {
-	if order.Quantity <= 0 {
-		order.Quantity = 1
+	if order == nil || order.UserID <= 0 || order.ProductId <= 0 || order.Quantity <= 0 || order.OrderStatus != datamodels.OrderWait || len(order.IdempotencyKey) < 8 || len(order.IdempotencyKey) > 128 {
+		return 0, ErrInvalidOrder
 	}
 	id, err := o.OrderRepository.CreateWithStock(ctx, order)
 	if errors.Is(err, repositories.ErrOrderUserNotFound) {
 		return 0, ErrOrderUserNotFound
 	}
-	if errors.Is(err, repositories.ErrProductNotFound) {
+	if errors.Is(err, repositories.ErrOrderProductNotFound) {
 		return 0, ErrOrderProductNotFound
 	}
 	if errors.Is(err, repositories.ErrInsufficientStock) {

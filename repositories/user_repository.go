@@ -6,9 +6,15 @@ import (
 	"fmt"
 	"product/common"
 	"product/datamodels"
+
+	"github.com/go-sql-driver/mysql"
 )
 
-var ErrUserNotFound = errors.New("user not found")
+var (
+	ErrUserNotFound  = errors.New("user not found")
+	ErrUserNameTaken = errors.New("userName already exists")
+	ErrUserHasOrders = errors.New("user is referenced by an order")
+)
 
 // IUserRepository 定义用户仓储层对外能力。
 type IUserRepository interface {
@@ -17,13 +23,13 @@ type IUserRepository interface {
 	Insert(user *datamodels.User) (userId int64, err error)
 	SelectAll() ([]*datamodels.User, error)
 	SelectById(id int64) (user *datamodels.User, err error)
-	DeleteById(id int64) bool
+	DeleteById(id int64) error
 	Update(user *datamodels.User) error
 }
 
 // NewUserRepository 创建用户仓储层实例。
 func NewUserRepository(table string, db *sql.DB) IUserRepository {
-	return &UserManagerRepository{table, db}
+	return &UserManagerRepository{"User", db}
 }
 
 // UserManagerRepository 负责查询和写入用户表。
@@ -41,6 +47,7 @@ func (u *UserManagerRepository) Conn() error {
 		}
 		u.mysqlConn = mysql
 	}
+	u.table = "User"
 	if u.table == "" {
 		u.table = "User"
 	}
@@ -56,7 +63,7 @@ func (u *UserManagerRepository) Select(userName string) (user *datamodels.User, 
 	if err = u.Conn(); err != nil {
 		return &datamodels.User{}, err
 	}
-	query := fmt.Sprintf("SELECT * FROM %s WHERE Username = ?", u.table)
+	query := "SELECT * FROM `User` WHERE Username = ?"
 	rows, err := u.mysqlConn.Query(query, userName)
 
 	if err != nil {
@@ -78,7 +85,7 @@ func (u *UserManagerRepository) Insert(user *datamodels.User) (userId int64, err
 	if err := u.Conn(); err != nil {
 		return 0, err
 	}
-	query := fmt.Sprintf("INSERT INTO %s ( NickName,Username,HashPassword) VALUES (?, ?, ?)", u.table)
+	query := "INSERT INTO `User` (NickName,Username,HashPassword) VALUES (?, ?, ?)"
 	result, err := u.mysqlConn.Exec(
 		query,
 		user.NickName,
@@ -86,6 +93,9 @@ func (u *UserManagerRepository) Insert(user *datamodels.User) (userId int64, err
 		user.HashPassword,
 	)
 	if err != nil {
+		if isDuplicateKeyError(err) {
+			return 0, ErrUserNameTaken
+		}
 		return 0, err
 	}
 	return result.LastInsertId()
@@ -95,7 +105,7 @@ func (u *UserManagerRepository) SelectAll() (users []*datamodels.User, err error
 	if err = u.Conn(); err != nil {
 		return nil, err
 	}
-	query := fmt.Sprintf("SELECT * FROM %s", u.table)
+	query := "SELECT * FROM `User`"
 	rows, err := u.mysqlConn.Query(query)
 	if err != nil {
 		return nil, err
@@ -116,7 +126,7 @@ func (u *UserManagerRepository) SelectById(id int64) (user *datamodels.User, err
 	if err := u.Conn(); err != nil {
 		return &datamodels.User{}, err
 	}
-	query := fmt.Sprintf("SELECT * FROM %s WHERE ID = ?", u.table)
+	query := "SELECT * FROM `User` WHERE ID = ?"
 	rows, err := u.mysqlConn.Query(query, id)
 	if err != nil {
 		return &datamodels.User{}, err
@@ -132,31 +142,50 @@ func (u *UserManagerRepository) SelectById(id int64) (user *datamodels.User, err
 	return common.MapToUser(result[0]), nil
 }
 
-func (u *UserManagerRepository) DeleteById(id int64) bool {
+func (u *UserManagerRepository) DeleteById(id int64) error {
 	if err := u.Conn(); err != nil {
-		return false
+		return err
 	}
-	query := fmt.Sprintf("DELETE FROM %s WHERE ID = ?", u.table)
+	query := "DELETE FROM `User` WHERE ID = ?"
 	result, err := u.mysqlConn.Exec(query, id)
 	if err != nil {
-		return false
+		var mysqlErr *mysql.MySQLError
+		if errors.As(err, &mysqlErr) && mysqlErr.Number == 1451 {
+			return ErrUserHasOrders
+		}
+		return err
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return false
+		return err
 	}
-	return rowsAffected > 0
+	if rowsAffected == 0 {
+		return ErrUserNotFound
+	}
+	return nil
 }
 
 func (u *UserManagerRepository) Update(user *datamodels.User) error {
 	if err := u.Conn(); err != nil {
 		return err
 	}
-	query := fmt.Sprintf("UPDATE %s SET NickName = ?,Username = ? ,HashPassword = ? WHERE ID = ?", u.table)
+	query := "UPDATE `User` SET NickName = ?,Username = ?,HashPassword = ? WHERE ID = ?"
 	result, err := u.mysqlConn.Exec(query, user.NickName, user.Username, user.HashPassword, user.ID)
 	if err != nil {
+		if isDuplicateKeyError(err) {
+			return ErrUserNameTaken
+		}
 		return err
 	}
-	_, err = result.RowsAffected()
-	return err
+	if affected, err := result.RowsAffected(); err != nil {
+		return err
+	} else if affected == 0 {
+		return ErrUserNotFound
+	}
+	return nil
+}
+
+func isDuplicateKeyError(err error) bool {
+	var mysqlErr *mysql.MySQLError
+	return errors.As(err, &mysqlErr) && mysqlErr.Number == 1062
 }

@@ -79,17 +79,27 @@ func (o *OrderController) PostCreate() {
 			_ = o.Ctx.JSON(common.NewFailResult("insufficient stock"))
 			return
 		}
+		if errors.Is(err, services.ErrOrderIdempotencyConflict) {
+			o.Ctx.StatusCode(iris.StatusConflict)
+			_ = o.Ctx.JSON(common.NewFailResult("Idempotency-Key was already used with a different request"))
+			return
+		}
+		if errors.Is(err, services.ErrInvalidOrder) {
+			o.Ctx.StatusCode(iris.StatusBadRequest)
+			_ = o.Ctx.JSON(common.NewFailResult("invalid order request"))
+			return
+		}
 		o.Ctx.StatusCode(iris.StatusInternalServerError)
 		_ = o.Ctx.JSON(common.NewFailResult("订单创建失败"))
 		return
 	}
-	_ = o.Ctx.JSON(iris.Map{
+	_ = o.Ctx.JSON(common.NewSuccessResult("order created", iris.Map{
 		"orderID":     orderID,
 		"userID":      order.UserID,
 		"productId":   order.ProductId,
 		"quantity":    order.Quantity,
 		"orderStatus": order.OrderStatus,
-	})
+	}))
 }
 
 func (o *OrderController) PostUpdate() {
@@ -107,6 +117,11 @@ func (o *OrderController) PostUpdate() {
 	}
 	userID, _ := common.AuthenticatedUserID(o.Ctx)
 	if err = o.OrderService.UpdateOrderStatus(o.Ctx.Request().Context(), id, userID, status); err != nil {
+		if errors.Is(err, repositories.ErrOrderNotFound) {
+			o.Ctx.StatusCode(iris.StatusNotFound)
+			_ = o.Ctx.JSON(common.NewFailResult("order not found"))
+			return
+		}
 		o.Ctx.StatusCode(iris.StatusConflict)
 		_ = o.Ctx.JSON(common.NewFailResult("invalid order state transition"))
 		return

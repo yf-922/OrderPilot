@@ -117,3 +117,34 @@ func TestConcurrentIdempotentRetryDeductsOnce(t *testing.T) {
 		t.Fatalf("expected one deduction and stock 90, got %d", stock)
 	}
 }
+
+func TestIdempotencyKeyRejectsDifferentPayload(t *testing.T) {
+	if os.Getenv("INTEGRATION_TEST") != "1" {
+		t.Skip("set INTEGRATION_TEST=1 to run MySQL tests")
+	}
+	db, err := common.GetMySQLConn()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if _, err = db.Exec("UPDATE product SET productNum = 100 WHERE ID = 1"); err != nil {
+		t.Fatal(err)
+	}
+	repo := repositories.NewOrderManagerRepository("order", db)
+	key := fmt.Sprintf("conflict-key-%d", time.Now().UnixNano())
+	order := &datamodels.Order{UserID: 1, ProductId: 1, Quantity: 2, OrderStatus: datamodels.OrderWait, IdempotencyKey: key}
+	if _, err = repo.CreateWithStock(context.Background(), order); err != nil {
+		t.Fatal(err)
+	}
+	order.Quantity = 3
+	if _, err = repo.CreateWithStock(context.Background(), order); !errors.Is(err, repositories.ErrIdempotencyConflict) {
+		t.Fatalf("expected idempotency conflict, got %v", err)
+	}
+	var stock int64
+	if err = db.QueryRow("SELECT productNum FROM product WHERE ID=1").Scan(&stock); err != nil {
+		t.Fatal(err)
+	}
+	if stock != 98 {
+		t.Fatalf("conflicting retry must not deduct more stock, got %d", stock)
+	}
+}

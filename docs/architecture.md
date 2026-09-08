@@ -9,6 +9,14 @@ HTTP (Iris)
   -> Redis (Cache-Aside for hot product list)
 ```
 
+## Runtime hardening
+
+- All request bodies are capped by `MAX_REQUEST_BODY_BYTES` (1 MiB by default).
+- Client-supplied request IDs are accepted only when they contain bounded ASCII characters; otherwise a cryptographically random ID is generated.
+- Write endpoints return the same `{success,message,data}` envelope so clients can handle errors consistently.
+- An idempotency key is bound to the original user, product, quantity and initial status. Reusing it with different parameters returns `409 Conflict` rather than silently returning an unrelated order.
+- The API process runs as a non-root user in the container, while `/health` and `/ready` support orchestration probes.
+
 ## Reliability decisions
 
 - MySQL foreign keys and indexes protect references and common list queries.

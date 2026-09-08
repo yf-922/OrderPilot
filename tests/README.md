@@ -2,10 +2,11 @@
 
 本目录用于补充 `goworks-product` 后端项目的轻量级接口自动化测试实践，重点覆盖用户、商品、订单三个模块中已经暴露的 HTTP 接口。
 
-当前项目依赖 MySQL 和 Redis，正向业务流程还需要提前准备用户、商品、订单等测试数据。因此测试分成两类：
+当前项目通过 Docker Compose 自动准备 MySQL、Redis、用户和商品种子数据。测试分成单元、并发集成和 HTTP 集成三类：
 
-1. 自动化冒烟测试：优先覆盖参数校验、错误响应、基础路由可用性，尽量不依赖数据库种子数据。
-2. 人工或半自动测试用例：记录需要数据库初始化数据支持的正向流程，例如用户登录成功、商品更新成功、订单创建成功。
+1. Go 单元测试：密码、鉴权、请求参数和服务层规则。
+2. Go 集成测试：真实 MySQL 事务、并发防超卖和幂等重试。
+3. HTTP 集成测试：健康检查、鉴权、搜索分页、订单取消返库和幂等冲突。
 
 ## 运行前提
 
@@ -53,9 +54,4 @@ BASE_URL=http://localhost:8080 python tests/api_smoke_test.py
 
 ## CI 说明
 
-仓库补充了 `.github/workflows/api-smoke.yml`。由于当前项目缺少可复现的 MySQL/Redis 初始化脚本，CI 阶段先做两件事：
-
-1. 编译 Go 项目，避免基础代码无法构建。
-2. 检查 Python 冒烟测试脚本语法，保证测试资产本身可维护。
-
-后续补齐 `schema.sql`、`seed.sql` 和容器化数据库后，可以在 CI 中启动完整服务并运行 `python tests/api_smoke_test.py`。
+仓库的 `.github/workflows/api-smoke.yml` 会构建完整 Docker Compose 环境，执行真实 MySQL 并发测试和 HTTP 冒烟测试；本地可用 `make integration` 复现。

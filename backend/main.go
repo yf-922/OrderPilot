@@ -24,7 +24,7 @@ import (
 // 5. 在 localhost:8080 启动 HTTP 服务。
 func main() {
 	app := iris.New()
-	app.UseRouter(common.RequestLogger, common.SecurityHeaders)
+	app.UseRouter(common.RequestBodyLimit, common.RequestLogger, common.SecurityHeaders)
 	app.Get("/health", func(ctx iris.Context) {
 		_ = ctx.JSON(common.NewSuccessResult("ok", iris.Map{"service": "product-api"}))
 	})

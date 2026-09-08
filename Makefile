@@ -1,13 +1,19 @@
 SHELL := pwsh.exe
 GO := go
 
-.PHONY: fmt test race vet build security integration up down ci
+.PHONY: fmt test race vet build security integration up down ci coverage coverage-html
 
 fmt:
 	$(GO)fmt -w backend common datamodels repositories services tests
 
 test:
 	$(GO) test ./... -coverprofile=coverage.out
+
+coverage: test
+	$(GO) tool cover -func=coverage.out
+
+coverage-html: test
+	$(GO) tool cover -html=coverage.out -o coverage.html
 
 race:
 	$(GO) test -race ./...

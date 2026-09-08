@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"errors"
 	"product/common"
+	"product/repositories"
 	"product/services"
 	"strconv"
 
@@ -60,8 +62,13 @@ func (u *UserController) PostCreate() {
 
 	userID, err := u.UserService.AddUser(user)
 	if err != nil {
-		if err.Error() == "userName already exists" {
+		if errors.Is(err, services.ErrInvalidPassword) {
 			u.Ctx.StatusCode(iris.StatusBadRequest)
+			_ = u.Ctx.JSON(common.NewFailResult(err.Error()))
+			return
+		}
+		if errors.Is(err, services.ErrUserNameExists) {
+			u.Ctx.StatusCode(iris.StatusConflict)
 			_ = u.Ctx.JSON(common.NewFailResult(err.Error()))
 			return
 		}
@@ -108,10 +115,17 @@ func (u *UserController) PostDelete() {
 	if !u.requireSelf(id) {
 		return
 	}
-	ok := u.UserService.DeleteUserById(id)
-	if !ok {
-		u.Ctx.StatusCode(iris.StatusInternalServerError)
-		_ = u.Ctx.JSON(common.NewFailResult("删除失败"))
+	err = u.UserService.DeleteUserById(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, repositories.ErrUserNotFound):
+			u.Ctx.StatusCode(iris.StatusNotFound)
+		case errors.Is(err, repositories.ErrUserHasOrders):
+			u.Ctx.StatusCode(iris.StatusConflict)
+		default:
+			u.Ctx.StatusCode(iris.StatusInternalServerError)
+		}
+		_ = u.Ctx.JSON(common.NewFailResult(err.Error()))
 		return
 	}
 	_ = u.Ctx.JSON(common.NewSuccessResult("删除成功", nil))
@@ -130,6 +144,21 @@ func (u *UserController) PostUpdate() {
 	}
 	err = u.UserService.UpdateUser(user)
 	if err != nil {
+		if errors.Is(err, services.ErrInvalidPassword) {
+			u.Ctx.StatusCode(iris.StatusBadRequest)
+			_ = u.Ctx.JSON(common.NewFailResult(err.Error()))
+			return
+		}
+		if errors.Is(err, services.ErrUserNameExists) {
+			u.Ctx.StatusCode(iris.StatusConflict)
+			_ = u.Ctx.JSON(common.NewFailResult("userName already exists"))
+			return
+		}
+		if errors.Is(err, services.ErrUserNotFound) {
+			u.Ctx.StatusCode(iris.StatusNotFound)
+			_ = u.Ctx.JSON(common.NewFailResult("user not found"))
+			return
+		}
 		u.Ctx.StatusCode(iris.StatusInternalServerError)
 
 		_ = u.Ctx.JSON(common.NewFailResult("更新失败"))

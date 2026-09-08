@@ -10,13 +10,17 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var ErrUserNameExists = repositories.ErrUserNameTaken
+var ErrUserNotFound = repositories.ErrUserNotFound
+var ErrInvalidPassword = errors.New("invalid password")
+
 // IUserService 定义用户业务层能力。
 type IUserService interface {
 	IsPwdSuccess(userName string, pwd string) (user *datamodels.User, isok bool)
 	AddUser(user *datamodels.User) (userId int64, err error)
 	GetAllUsers() ([]*datamodels.User, error)
 	GetUserById(userId int64) (*datamodels.User, error)
-	DeleteUserById(userId int64) bool
+	DeleteUserById(userId int64) error
 	UpdateUser(user *datamodels.User) error
 }
 
@@ -40,15 +44,25 @@ func (u *UserService) IsPwdSuccess(userName string, pwd string) (user *datamodel
 	if !ValidatePassword(pwd, user.HashPassword) {
 		return user, false
 	}
+	if IsLegacyPasswordHash(user.HashPassword) {
+		upgraded := *user
+		upgraded.HashPassword = EncodePassword(pwd)
+		if upgraded.HashPassword != "" {
+			_ = u.UserRepository.Update(&upgraded)
+		}
+	}
 
 	return user, true
 }
 
 // AddUser 在写入数据库前先将用户密码做哈希处理。
 func (u *UserService) AddUser(user *datamodels.User) (userId int64, err error) {
+	if user == nil || !validPasswordInput(user.HashPassword) {
+		return 0, ErrInvalidPassword
+	}
 	_, err = u.UserRepository.Select(user.Username)
 	if err == nil {
-		return 0, errors.New("userName already exists")
+		return 0, ErrUserNameExists
 	}
 	if !errors.Is(err, repositories.ErrUserNotFound) {
 		return 0, err
@@ -65,13 +79,24 @@ func (u *UserService) GetUserById(userId int64) (*datamodels.User, error) {
 	return u.UserRepository.SelectById(userId)
 }
 
-func (u *UserService) DeleteUserById(userId int64) bool {
+func (u *UserService) DeleteUserById(userId int64) error {
 	return u.UserRepository.DeleteById(userId)
 }
 
 func (u *UserService) UpdateUser(user *datamodels.User) error {
+	if user == nil || !validPasswordInput(user.HashPassword) {
+		return ErrInvalidPassword
+	}
 	user.HashPassword = EncodePassword(user.HashPassword)
+	if user.HashPassword == "" {
+		return ErrInvalidPassword
+	}
 	return u.UserRepository.Update(user)
+}
+
+func validPasswordInput(password string) bool {
+	length := len([]byte(password))
+	return length >= 6 && length <= 72
 }
 
 // ValidatePassword 使用相同哈希规则校验用户输入密码是否匹配。
@@ -82,7 +107,20 @@ func ValidatePassword(userPassword string, hashed string) bool {
 	return EncodePasswordLegacy(userPassword) == hashed
 }
 
-// EncodePassword 使用 SHA-256 对明文密码做哈希编码。
+// IsLegacyPasswordHash identifies the original SHA-256 storage format.
+func IsLegacyPasswordHash(hashed string) bool {
+	if len(hashed) != 64 {
+		return false
+	}
+	for _, r := range hashed {
+		if !(r >= '0' && r <= '9' || r >= 'a' && r <= 'f' || r >= 'A' && r <= 'F') {
+			return false
+		}
+	}
+	return true
+}
+
+// EncodePassword hashes a password with bcrypt for storage.
 func EncodePassword(password string) string {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {

@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"errors"
 	"product/common"
+	"product/repositories"
 	"product/services"
 	"strconv"
 
@@ -58,7 +60,7 @@ func (p *ProductController) PostUpdate() {
 	}
 
 	if err = p.ProductService.UpdateProduct(product); err != nil {
-		if err.Error() == "product not found" {
+		if errors.Is(err, repositories.ErrProductNotFound) {
 			p.Ctx.StatusCode(iris.StatusNotFound)
 			_ = p.Ctx.JSON(common.NewFailResult(err.Error()))
 			return
@@ -86,13 +88,10 @@ func (p *ProductController) PostCreate() {
 		_ = p.Ctx.JSON(common.NewFailResult("商品创建失败"))
 		return
 	}
-	_ = p.Ctx.JSON(iris.Map{
-		"id":           productID,
-		"productName":  product.ProductName,
-		"productNum":   product.ProductNum,
-		"productImage": product.ProductImage,
-		"productUrl":   product.ProductUrl,
-	})
+	_ = p.Ctx.JSON(common.NewSuccessResult("product created", iris.Map{
+		"id": productID, "productName": product.ProductName, "productNum": product.ProductNum,
+		"productImage": product.ProductImage, "productUrl": product.ProductUrl,
+	}))
 
 }
 
@@ -113,9 +112,16 @@ func (p *ProductController) PostDelete() {
 		_ = p.Ctx.JSON(common.NewFailResult("id must be a positive integer"))
 		return
 	}
-	if !p.ProductService.DeleteProductById(id) {
-		p.Ctx.StatusCode(iris.StatusNotFound)
-		_ = p.Ctx.JSON(common.NewFailResult("product not found"))
+	if err := p.ProductService.DeleteProductById(id); err != nil {
+		switch {
+		case errors.Is(err, repositories.ErrProductNotFound):
+			p.Ctx.StatusCode(iris.StatusNotFound)
+		case errors.Is(err, repositories.ErrProductInUse):
+			p.Ctx.StatusCode(iris.StatusConflict)
+		default:
+			p.Ctx.StatusCode(iris.StatusInternalServerError)
+		}
+		_ = p.Ctx.JSON(common.NewFailResult(err.Error()))
 		return
 	}
 	_ = p.Ctx.JSON(common.NewSuccessResult("product deleted", nil))

@@ -3,6 +3,7 @@ package common
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 )
 
@@ -20,6 +21,20 @@ func EnsureSchema(ctx context.Context, db *sql.DB) error {
 	}
 	if database == "" {
 		return fmt.Errorf("no database selected")
+	}
+	for _, table := range []string{"User", "product", "order"} {
+		if ok, err := hasTable(ctx, db, database, table); err != nil {
+			return err
+		} else if !ok {
+			return fmt.Errorf("required table `%s` does not exist", table)
+		}
+	}
+	if length, err := columnLength(ctx, db, database, "User", "HashPassword"); err != nil {
+		return err
+	} else if length < 255 {
+		if _, err := db.ExecContext(ctx, "ALTER TABLE `User` MODIFY COLUMN `HashPassword` VARCHAR(255) NOT NULL"); err != nil {
+			return fmt.Errorf("expand User.HashPassword: %w", err)
+		}
 	}
 
 	if ok, err := hasColumn(ctx, db, database, "order", "quantity"); err != nil {
@@ -55,6 +70,27 @@ func EnsureSchema(ctx context.Context, db *sql.DB) error {
 func hasColumn(ctx context.Context, db *sql.DB, database, table, column string) (bool, error) {
 	var count int
 	err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM information_schema.columns WHERE table_schema=? AND table_name=? AND column_name=?`, database, table, column).Scan(&count)
+	return count > 0, err
+}
+
+func columnLength(ctx context.Context, db *sql.DB, database, table, column string) (int64, error) {
+	var length sql.NullInt64
+	err := db.QueryRowContext(ctx, `SELECT character_maximum_length FROM information_schema.columns WHERE table_schema=? AND table_name=? AND column_name=?`, database, table, column).Scan(&length)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, fmt.Errorf("required column `%s.%s` does not exist", table, column)
+	}
+	if err != nil {
+		return 0, err
+	}
+	if !length.Valid {
+		return 0, fmt.Errorf("column `%s.%s` has no character length", table, column)
+	}
+	return length.Int64, nil
+}
+
+func hasTable(ctx context.Context, db *sql.DB, database, table string) (bool, error) {
+	var count int
+	err := db.QueryRowContext(ctx, `SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=? AND table_name=?`, database, table).Scan(&count)
 	return count > 0, err
 }
 

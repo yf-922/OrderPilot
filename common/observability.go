@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/kataras/iris/v12"
@@ -13,7 +14,7 @@ import (
 // RequestLogger emits one structured JSON record per request and propagates a request ID.
 func RequestLogger(ctx iris.Context) {
 	requestID := ctx.GetHeader("X-Request-ID")
-	if requestID == "" {
+	if !validRequestID(requestID) {
 		requestID = newRequestID()
 	}
 	ctx.Header("X-Request-ID", requestID)
@@ -30,6 +31,18 @@ func RequestLogger(ctx iris.Context) {
 	}
 	encoded, _ := json.Marshal(record)
 	log.Print(string(encoded))
+}
+
+func validRequestID(value string) bool {
+	if len(value) == 0 || len(value) > 64 {
+		return false
+	}
+	for _, r := range value {
+		if !(r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || strings.ContainsRune("-_.", r)) {
+			return false
+		}
+	}
+	return true
 }
 
 func SecurityHeaders(ctx iris.Context) {

@@ -12,7 +12,7 @@
 | 后端框架 | Go + Iris |
 | 数据库 | MySQL |
 | 缓存 / 连接组件 | Redis |
-| 测试方式 | Python 脚本冒烟测试 + 人工正向流程验证 |
+| 测试方式 | Go 单元/并发测试 + Python/PowerShell 自动化集成测试 |
 
 ## 自动化冒烟用例
 
@@ -27,19 +27,16 @@
 | API-007 | 订单 | `POST /order/create` | 缺少用户 ID | `productID=1,orderStatus=0` | HTTP 400，返回 `userID is required` |
 | API-008 | 订单 | `POST /order/create` | 缺少商品 ID | `userID=1,orderStatus=0` | HTTP 400，返回 `productID is required` |
 
-## 正向流程待补充用例
-
-以下用例依赖稳定的初始化数据，当前先记录为后续补充项：
+## 已覆盖的正向流程
 
 | 编号 | 模块 | 场景 | 前置条件 | 预期结果 |
 | --- | --- | --- | --- | --- |
-| API-009 | 用户 | 登录成功 | 数据库存在指定用户名和密码 | 返回 `success=true` 和用户 ID |
-| API-010 | 用户 | 新增用户成功 | 用户名未存在 | 返回 `success=true` 和新用户 ID |
-| API-011 | 商品 | 商品更新成功 | 数据库存在指定商品 ID | 返回 `success=true` 和更新后的商品信息 |
-| API-012 | 订单 | 订单创建成功 | 用户 ID 和商品 ID 均存在 | 返回新订单 ID |
+| API-009 | 用户 | 登录成功 | Docker seed 中存在 demo 用户 | 返回 `success=true`、用户 ID 和 bearer token |
+| API-010 | 商品 | 搜索分页 | Docker seed 中存在商品 | 返回商品列表和 total |
+| API-011 | 订单 | 幂等创建与重试 | demo 用户和商品存在 | 两次请求返回同一订单 ID，库存只扣一次 |
+| API-012 | 订单 | 取消返库存 | 存在待处理订单 | 状态变为失败，库存恢复，重复取消返回 409 |
 
 ## 风险记录
 
-1. 项目尚未提供完整数据库初始化 SQL，正向流程测试依赖本地数据库状态。
-2. 用户登录目前只返回 JSON，暂未形成 session / token 鉴权链路，因此暂不验证鉴权流程。
-3. 商品、订单部分 CRUD 已有 service / repository 能力，但 HTTP 接口还不完整，后续可以继续补齐。
+1. 生产环境建议将应用启动迁移替换为独立 migration pipeline，并在发布前备份数据库。
+2. 当前项目使用 HMAC bearer token，生产环境必须注入随机高熵 `AUTH_SECRET` 并通过密钥管理系统托管。

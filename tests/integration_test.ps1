@@ -31,20 +31,23 @@ $headers['Idempotency-Key'] = 'integration-invalid-order'
 $bad = try { Invoke-WebRequest "$base/order/create" -Method Post -Headers $headers -Body @{ userID='1'; productID='1'; quantity='0'; orderStatus='0' } -UseBasicParsing } catch { $_.Exception.Response }
 if ($bad.StatusCode.value__ -ne 400) { throw "validation: expected HTTP 400, got $($bad.StatusCode.value__)" }
 
-$beforeStock = ((Invoke-WebRequest "$base/product/1" -Headers $headers -UseBasicParsing).Content | ConvertFrom-Json).data.ProductNum
+$beforeStock = ((Invoke-WebRequest "$base/product/1" -Headers $headers -UseBasicParsing).Content | ConvertFrom-Json).data.productNum
 $headers['Idempotency-Key'] = "integration-order-$([guid]::NewGuid())"
 $first = Invoke-WebRequest "$base/order/create" -Method Post -Headers $headers -Body @{ userID='1'; productID='1'; quantity='2'; orderStatus='0' } -UseBasicParsing
 $second = Invoke-WebRequest "$base/order/create" -Method Post -Headers $headers -Body @{ userID='1'; productID='1'; quantity='2'; orderStatus='0' } -UseBasicParsing
-$firstID = ($first.Content | ConvertFrom-Json).orderID
-$secondID = ($second.Content | ConvertFrom-Json).orderID
+$firstID = ($first.Content | ConvertFrom-Json).data.orderID
+$secondID = ($second.Content | ConvertFrom-Json).data.orderID
 if ($firstID -ne $secondID) { throw 'idempotent retries must return the same order ID' }
+
+$conflict = try { Invoke-WebRequest "$base/order/create" -Method Post -Headers $headers -Body @{ userID='1'; productID='1'; quantity='3'; orderStatus='0' } -UseBasicParsing } catch { $_.Exception.Response }
+if ($conflict.StatusCode.value__ -ne 409) { throw "idempotency conflict: expected HTTP 409, got $($conflict.StatusCode.value__)" }
 
 $orderList = (Invoke-WebRequest "$base/order/list?page=1&pageSize=10" -Headers $headers -UseBasicParsing).Content | ConvertFrom-Json
 if ($orderList.data.total -lt 1) { throw 'owned order list is empty' }
 
 $cancel = Invoke-WebRequest "$base/order/delete" -Method Post -Headers $headers -Body @{ id="$firstID" } -UseBasicParsing
 Assert-Status $cancel.StatusCode 200 'cancel order'
-$afterStock = ((Invoke-WebRequest "$base/product/1" -Headers $headers -UseBasicParsing).Content | ConvertFrom-Json).data.ProductNum
+$afterStock = ((Invoke-WebRequest "$base/product/1" -Headers $headers -UseBasicParsing).Content | ConvertFrom-Json).data.productNum
 if ([int64]$afterStock -ne [int64]$beforeStock) { throw "cancel did not restore stock: before=$beforeStock after=$afterStock" }
 
 $cancelAgain = try { Invoke-WebRequest "$base/order/delete" -Method Post -Headers $headers -Body @{ id="$firstID" } -UseBasicParsing } catch { $_.Exception.Response }

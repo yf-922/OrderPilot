@@ -37,7 +37,7 @@ const (
 	defaultMySQLPort     = 3306
 	defaultMySQLUser     = "root"
 	defaultMySQLPassword = "root"
-	defaultMySQLDatabase = "imooc"
+	defaultMySQLDatabase = "product"
 	defaultMySQLCharset  = "utf8mb4"
 )
 

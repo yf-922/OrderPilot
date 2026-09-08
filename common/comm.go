@@ -73,6 +73,9 @@ func BuildProductForUpdateFromContext(ctx iris.Context) (*datamodels.Product, er
 	if err != nil {
 		return nil, err
 	}
+	if id <= 0 {
+		return nil, errors.New("id must be a positive integer")
+	}
 
 	productNum, err := readInt64FormValue(ctx, "productNum")
 	if err != nil {
@@ -149,6 +152,9 @@ func BuildUserForCreateFromContext(ctx iris.Context) (*datamodels.User, error) {
 	if len(password) < 6 {
 		return nil, fmt.Errorf("password must be at least 6 characters")
 	}
+	if len([]byte(password)) > 72 {
+		return nil, fmt.Errorf("password must be at most 72 bytes")
+	}
 	return &datamodels.User{
 		NickName:     nickName,
 		Username:     userName,
@@ -169,9 +175,15 @@ func BuildUserForUpdateFromContext(ctx iris.Context) (*datamodels.User, error) {
 	if password == "" {
 		return nil, fmt.Errorf("password is required")
 	}
+	if len([]byte(password)) > 72 {
+		return nil, fmt.Errorf("password must be at most 72 bytes")
+	}
 	id, err := readInt64FormValue(ctx, "id")
 	if err != nil {
 		return nil, err
+	}
+	if id <= 0 {
+		return nil, errors.New("id must be a positive integer")
 	}
 	return &datamodels.User{
 		ID:           int(id),
@@ -203,6 +215,12 @@ func BuildOrderForCreateFromContext(ctx iris.Context) (*datamodels.Order, error)
 	}
 	if quantity <= 0 {
 		return nil, fmt.Errorf("quantity must be positive")
+	}
+	if userID <= 0 {
+		return nil, fmt.Errorf("userID must be a positive integer")
+	}
+	if productID <= 0 {
+		return nil, fmt.Errorf("productID must be a positive integer")
 	}
 	if orderStatus < 0 || orderStatus > 2 {
 		return nil, fmt.Errorf("orderStatus must be 0, 1 or 2")

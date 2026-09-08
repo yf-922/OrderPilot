@@ -11,11 +11,12 @@ import (
 )
 
 var (
-	ErrOrderUserNotFound = errors.New("user not found")
-	ErrProductNotFound   = errors.New("product not found")
-	ErrInsufficientStock = errors.New("insufficient stock")
-	ErrOrderNotFound     = errors.New("order not found")
-	ErrInvalidOrderState = errors.New("invalid order state")
+	ErrOrderUserNotFound    = errors.New("user not found")
+	ErrOrderProductNotFound = errors.New("product not found")
+	ErrInsufficientStock    = errors.New("insufficient stock")
+	ErrOrderNotFound        = errors.New("order not found")
+	ErrInvalidOrderState    = errors.New("invalid order state")
+	ErrIdempotencyConflict  = errors.New("idempotency key conflicts with request")
 )
 
 // OrderRepository 定义订单仓储层需要实现的能力。
@@ -79,6 +80,14 @@ func (o *OrderManagerRepository) UpdateStatus(ctx context.Context, orderID, user
 		return err
 	}
 	if rows != 1 {
+		var currentStatus int64
+		err := o.mysqlConn.QueryRowContext(ctx, "SELECT orderStatus FROM `order` WHERE ID=? AND userID=?", orderID, userID).Scan(&currentStatus)
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrOrderNotFound
+		}
+		if err != nil {
+			return err
+		}
 		return ErrInvalidOrderState
 	}
 	return nil
@@ -125,10 +134,14 @@ func (o *OrderManagerRepository) CreateWithStock(ctx context.Context, order *dat
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	var existingID int64
-	err = tx.QueryRowContext(ctx, "SELECT ID FROM `order` WHERE idempotencyKey = ?", order.IdempotencyKey).Scan(&existingID)
+	var existing datamodels.Order
+	err = tx.QueryRowContext(ctx, "SELECT ID,userID,productID,quantity,orderStatus FROM `order` WHERE idempotencyKey = ?", order.IdempotencyKey).
+		Scan(&existing.ID, &existing.UserID, &existing.ProductId, &existing.Quantity, &existing.OrderStatus)
 	if err == nil {
-		return existingID, tx.Commit()
+		if existing.UserID != order.UserID || existing.ProductId != order.ProductId || existing.Quantity != order.Quantity || existing.OrderStatus != order.OrderStatus {
+			return 0, ErrIdempotencyConflict
+		}
+		return existing.ID, tx.Commit()
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
 		return 0, err
@@ -143,7 +156,7 @@ func (o *OrderManagerRepository) CreateWithStock(ctx context.Context, order *dat
 
 	var stock int64
 	if err = tx.QueryRowContext(ctx, "SELECT productNum FROM product WHERE ID = ? FOR UPDATE", order.ProductId).Scan(&stock); errors.Is(err, sql.ErrNoRows) {
-		return 0, ErrProductNotFound
+		return 0, ErrOrderProductNotFound
 	} else if err != nil {
 		return 0, err
 	}
@@ -168,8 +181,12 @@ func (o *OrderManagerRepository) CreateWithStock(ctx context.Context, order *dat
 		var mysqlErr *mysql.MySQLError
 		if errors.As(err, &mysqlErr) && mysqlErr.Number == 1062 {
 			_ = tx.Rollback()
-			if lookupErr := o.mysqlConn.QueryRowContext(ctx, "SELECT ID FROM `order` WHERE idempotencyKey=?", order.IdempotencyKey).Scan(&existingID); lookupErr == nil {
-				return existingID, nil
+			var existing datamodels.Order
+			if lookupErr := o.mysqlConn.QueryRowContext(ctx, "SELECT ID,userID,productID,quantity,orderStatus FROM `order` WHERE idempotencyKey=?", order.IdempotencyKey).Scan(&existing.ID, &existing.UserID, &existing.ProductId, &existing.Quantity, &existing.OrderStatus); lookupErr == nil {
+				if existing.UserID != order.UserID || existing.ProductId != order.ProductId || existing.Quantity != order.Quantity || existing.OrderStatus != order.OrderStatus {
+					return 0, ErrIdempotencyConflict
+				}
+				return existing.ID, nil
 			}
 		}
 		return 0, err
@@ -186,7 +203,7 @@ func (o *OrderManagerRepository) CreateWithStock(ctx context.Context, order *dat
 
 // NewOrderManagerRepository 创建订单仓储层实现。
 func NewOrderManagerRepository(table string, sql *sql.DB) OrderRepository {
-	return &OrderManagerRepository{table: table, mysqlConn: sql}
+	return &OrderManagerRepository{table: "order", mysqlConn: sql}
 }
 
 // OrderManagerRepository 负责直接读写订单表。
@@ -204,8 +221,6 @@ func (o *OrderManagerRepository) Conn() error {
 		}
 		o.mysqlConn = mysql
 	}
-	if o.table == "" {
-		o.table = "order"
-	}
+	o.table = "order"
 	return nil
 }
