@@ -1,0 +1,340 @@
+/* 全局主题变量：统一管理背景色、文本色、强调色和阴影。 */
+:root {
+    --bg: #f3efe7;
+    --paper: #fffdf8;
+    --ink: #1d1d1f;
+    --muted: #6b6b73;
+    --line: #ded5c7;
+    --accent: #0d6c63;
+    --accent-dark: #084c46;
+    --warm: #d7a86e;
+    --danger: #a63a3a;
+    --shadow: 0 18px 40px rgba(65, 45, 22, 0.12);
+}
+
+/* 统一盒模型，避免边距和宽高计算不一致。 */
+* {
+    box-sizing: border-box;
+}
+
+/* 页面基础样式：负责字体、背景和默认文字颜色。 */
+body {
+    margin: 0;
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--ink);
+    background:
+        radial-gradient(circle at top left, rgba(215, 168, 110, 0.25), transparent 30%),
+        linear-gradient(135deg, #f8f4ec, #ece4d8);
+}
+
+/* 链接默认继承当前文字颜色，由具体类决定视觉强调。 */
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* 页面外层容器：限制最大宽度并提供统一留白。 */
+.page-shell {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: 32px 24px 48px;
+}
+
+/* 顶部栏：包含标题和导航。 */
+.topbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+
+.topbar h1,
+.panel-head h2 {
+    margin: 0;
+}
+
+/* 小标题样式：用于页面角标、模块说明等辅助文本。 */
+.eyebrow {
+    margin: 0 0 8px;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+/* 顶部导航按钮和错误页返回链接共用的胶囊按钮样式。 */
+.topbar-nav a,
+.primary-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 18px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+}
+
+/* 内容区左右分栏：左侧主内容，右侧编辑或说明区。 */
+.content-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+    gap: 24px;
+}
+
+/* 面板卡片是整个后台界面的基础视觉容器。 */
+.panel {
+    background: var(--paper);
+    border: 1px solid rgba(222, 213, 199, 0.9);
+    border-radius: 24px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+/* 面板标题区负责放置模块标题和状态徽标。 */
+.panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 24px 24px 16px;
+}
+
+/* 徽标既用于数量提示，也用于状态标记。 */
+.badge {
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(13, 108, 99, 0.08);
+    color: var(--accent-dark);
+    font-size: 13px;
+}
+
+/* 面板横幅通常放图标和说明文字，用于解释当前页面作用。 */
+.panel-banner {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 0 24px 18px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(13, 108, 99, 0.08), rgba(215, 168, 110, 0.14));
+}
+
+.panel-banner img {
+    width: 160px;
+    max-width: 40%;
+    height: auto;
+    flex-shrink: 0;
+}
+
+.panel-banner p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.7;
+}
+
+/* 表格外层允许在窄屏上横向滚动。 */
+.table-wrap {
+    overflow-x: auto;
+    padding: 0 16px 16px;
+}
+
+/* 商品表格也复用于订单列表。 */
+.product-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.product-table th,
+.product-table td {
+    padding: 16px 12px;
+    border-top: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+    font-size: 14px;
+}
+
+.product-table th {
+    color: var(--muted);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* 让长链接、长图片地址可以换行显示。 */
+.cell-break {
+    max-width: 220px;
+    word-break: break-all;
+}
+
+/* 商品缩略图样式。 */
+.product-thumb {
+    display: block;
+    width: 72px;
+    height: 72px;
+    object-fit: cover;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: #fff;
+}
+
+.preview-link {
+    display: inline-flex;
+}
+
+/* 外链使用下划线强调可点击性。 */
+.external-link {
+    color: var(--accent-dark);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.sub-link {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    word-break: break-all;
+}
+
+.muted-text {
+    color: var(--muted);
+}
+
+.nowrap-col {
+    white-space: nowrap;
+}
+
+/* 空状态样式：当列表没有数据时显示插图和说明。 */
+.empty-row {
+    text-align: center;
+    color: var(--muted);
+}
+
+.empty-row span {
+    display: block;
+    margin-top: 12px;
+}
+
+.empty-illustration {
+    width: 180px;
+    max-width: 100%;
+    height: auto;
+}
+
+/* 操作按钮和提交按钮的基础样式。 */
+.action-btn,
+.submit-btn {
+    border: 0;
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13, 108, 99, 0.1);
+    color: var(--accent-dark);
+    white-space: nowrap;
+}
+
+.submit-btn {
+    width: 100%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    color: #fff;
+}
+
+/* 右侧表单面板底部多留一点空间。 */
+.edit-panel {
+    padding-bottom: 24px;
+}
+
+/* 表单整体排版。 */
+.product-form {
+    padding: 0 24px;
+}
+
+.product-form label {
+    display: block;
+    margin-bottom: 16px;
+}
+
+.product-form span {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.product-form input {
+    width: 100%;
+    height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fff;
+}
+
+.form-actions {
+    margin-top: 20px;
+}
+
+/* 表单消息区用于显示 AJAX 请求结果。 */
+.form-message {
+    min-height: 22px;
+    margin: 14px 0 0;
+    font-size: 14px;
+}
+
+.form-message.success {
+    color: var(--accent-dark);
+}
+
+.form-message.error {
+    color: var(--danger);
+}
+
+/* 错误页整体居中。 */
+.error-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+}
+
+.error-card {
+    max-width: 560px;
+    padding: 32px;
+    border-radius: 24px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+}
+
+.error-message {
+    color: var(--muted);
+    line-height: 1.8;
+}
+
+/* 响应式处理：窄屏下改为单列布局，顶部和横幅纵向排布。 */
+@media (max-width: 960px) {
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .panel-banner {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .panel-banner img {
+        max-width: 100%;
+    }
+}

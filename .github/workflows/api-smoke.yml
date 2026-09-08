@@ -1,0 +1,80 @@
+name: API Smoke Checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  static-and-test-assets:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Verify Go modules
+        run: go mod download
+
+      - name: Build backend
+        run: go build ./...
+
+      - name: Run Go tests
+        run: go test ./...
+
+      - name: Run race detector
+        run: go test -race ./...
+
+      - name: Run vet
+        run: go vet ./...
+
+      - name: Install static analysis tools
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@latest
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run static analysis and vulnerability scan
+        shell: bash
+        run: |
+          "$(go env GOPATH)/bin/staticcheck" ./...
+          "$(go env GOPATH)/bin/govulncheck" ./...
+
+      - name: Run Go formatter check
+        shell: bash
+        run: test -z "$(gofmt -l backend common datamodels repositories services)"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Check API smoke test syntax
+        run: python -m py_compile tests/api_smoke_test.py
+
+      - name: Start integration environment
+        run: docker compose up -d --build --wait
+
+      - name: Run database concurrency integration test
+        env:
+          INTEGRATION_TEST: "1"
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PORT: 3306
+          MYSQL_USER: root
+          MYSQL_PASSWORD: root
+          MYSQL_DATABASE: product
+        run: go test ./tests -run TestConcurrentOrdersDoNotOversell -v
+
+      - name: Run HTTP API smoke tests
+        run: python tests/api_smoke_test.py
+
+      - name: Show container logs after failure
+        if: failure()
+        run: docker compose logs --no-color
+
+      - name: Stop integration environment
+        if: always()
+        run: docker compose down -v

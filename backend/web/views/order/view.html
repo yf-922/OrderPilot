@@ -1,0 +1,93 @@
+<section class="content-grid">
+    <section class="panel">
+        <div class="panel-head">
+            <div>
+                <p class="eyebrow">Order Overview</p>
+                <h2>订单管理总览</h2>
+            </div>
+            <span class="badge">当前共 {{ len .order }} 条订单</span>
+        </div>
+
+        <div class="panel-banner">
+            <img src="/assets/img/product-badge.svg" alt="订单管理标识">
+            <p>
+                当前页面展示订单列表及其关联的商品信息。
+                页面中的商品名称、图片和链接来自订单表与商品表的关联查询结果。
+            </p>
+        </div>
+
+        <div class="table-wrap">
+            <table class="product-table">
+                <thead>
+                <tr>
+                    <th>订单 ID</th>
+                    <th>用户 ID</th>
+                    <th>商品 ID</th>
+                    <th>订单状态</th>
+                    <th>商品名称</th>
+                    <th>商品图片</th>
+                    <th>商品链接</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ range $id, $item := .order }}
+                <tr>
+                    <td>{{ index $item "ID" }}</td>
+                    <td>{{ index $item "userID" }}</td>
+                    <td>{{ index $item "productID" }}</td>
+                    <td>
+                        {{ if eq (index $item "orderStatus") "0" }}
+                        <span class="badge">待处理</span>
+                        {{ else if eq (index $item "orderStatus") "1" }}
+                        <span class="badge">已成功</span>
+                        {{ else }}
+                        <span class="badge">已失败</span>
+                        {{ end }}
+                    </td>
+                    <td>{{ index $item "productName" }}</td>
+                    <td class="cell-break">
+                        {{ $image := index $item "productImage" }}
+                        {{ if $image }}
+                        <a href="{{ $image }}" target="_blank" rel="noreferrer">查看图片</a>
+                        {{ else }}
+                        暂无图片
+                        {{ end }}
+                    </td>
+                    <td class="cell-break">
+                        {{ $url := index $item "productUrl" }}
+                        {{ if $url }}
+                        <a href="{{ $url }}" target="_blank" rel="noreferrer">查看链接</a>
+                        {{ else }}
+                        暂无链接
+                        {{ end }}
+                    </td>
+                </tr>
+                {{ else }}
+                <tr>
+                    <td colspan="7" class="empty-row">
+                        <img class="empty-illustration" src="/assets/img/empty-product.svg" alt="暂无订单">
+                        <span>当前还没有订单数据</span>
+                    </td>
+                </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <aside class="panel edit-panel">
+        <div class="panel-head">
+            <div>
+                <p class="eyebrow">Order Status</p>
+                <h2>订单状态说明</h2>
+            </div>
+        </div>
+
+        <div class="product-form">
+            <p class="form-message"><code>0</code> 表示等待处理，对应常量 <code>OrderWait</code></p>
+            <p class="form-message"><code>1</code> 表示订单成功，对应常量 <code>OrederSuccess</code></p>
+            <p class="form-message"><code>2</code> 表示订单失败，对应常量 <code>OrderFailed</code></p>
+            <p class="form-message">当前页面主要用于查看订单和商品关联展示信息，暂未提供订单编辑表单。</p>
+        </div>
+    </aside>
+</section>

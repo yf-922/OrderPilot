@@ -1,0 +1,7 @@
+.idea/
+.codex-cache/
+.codex-gopath/
+.codex-telemetry/
+fronted/
+__pycache__/
+*.py[cod]

@@ -1,0 +1,136 @@
+<section class="content-grid">
+    <section class="panel">
+        <div class="panel-head">
+            <div>
+                <p class="eyebrow">Product Overview</p>
+                <h2>商品管理总览</h2>
+            </div>
+            <span class="badge">当前共 {{ len .products }} 个商品</span>
+        </div>
+
+        <div class="panel-banner">
+            <img src="/assets/img/product-badge.svg" alt="商品管理标识">
+            <p>
+                当前页面展示商品列表，并支持按照现有接口更新商品信息。
+                图片地址会显示缩略图和可点击链接，商品链接也可以直接跳转访问。
+            </p>
+        </div>
+
+        <div class="table-wrap">
+            <table class="product-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>商品名称</th>
+                    <th class="nowrap-col">库存</th>
+                    <th>图片</th>
+                    <th>图片地址</th>
+                    <th>商品链接</th>
+                    <th class="nowrap-col">当前状态</th>
+                    <th class="nowrap-col">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {{ range .products }}
+                <tr>
+                    <td>{{ .ID }}</td>
+                    <td>{{ .ProductName }}</td>
+                    <td class="nowrap-col">{{ .ProductNum }}</td>
+                    <td>
+                        {{ if .ProductImage }}
+                        <a href="{{ .ProductImage }}" target="_blank" rel="noreferrer" class="preview-link">
+                            <img class="product-thumb" src="{{ .ProductImage }}" alt="{{ .ProductName }}">
+                        </a>
+                        {{ else }}
+                        <span class="muted-text">暂无图片</span>
+                        {{ end }}
+                    </td>
+                    <td class="cell-break">
+                        {{ if .ProductImage }}
+                        <a href="{{ .ProductImage }}" target="_blank" rel="noreferrer" class="external-link">{{ .ProductImage }}</a>
+                        {{ else }}
+                        <span class="muted-text">暂无图片地址</span>
+                        {{ end }}
+                    </td>
+                    <td class="cell-break">
+                        {{ if .ProductUrl }}
+                        <a href="{{ .ProductUrl }}" target="_blank" rel="noreferrer" class="external-link">查看商品</a>
+                        <div class="sub-link">{{ .ProductUrl }}</div>
+                        {{ else }}
+                        <span class="muted-text">暂无商品链接</span>
+                        {{ end }}
+                    </td>
+                    <td class="nowrap-col">
+                        {{ if gt .ProductNum 0 }}
+                        <span class="badge">可售</span>
+                        {{ else }}
+                        <span class="badge">缺货</span>
+                        {{ end }}
+                    </td>
+                    <td class="nowrap-col">
+                        <button
+                                class="action-btn js-edit-product"
+                                type="button"
+                                data-id="{{ .ID }}"
+                                data-name="{{ .ProductName }}"
+                                data-num="{{ .ProductNum }}"
+                                data-image="{{ .ProductImage }}"
+                                data-url="{{ .ProductUrl }}">
+                            编辑
+                        </button>
+                    </td>
+                </tr>
+                {{ else }}
+                <tr>
+                    <td colspan="8" class="empty-row">
+                        <img class="empty-illustration" src="/assets/img/empty-product.svg" alt="暂无商品">
+                        <span>当前数据库里还没有商品数据</span>
+                    </td>
+                </tr>
+                {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <aside class="panel edit-panel">
+        <div class="panel-head">
+            <div>
+                <p class="eyebrow">Current Capability</p>
+                <h2>按现有逻辑修改商品</h2>
+            </div>
+        </div>
+
+        <form id="product-update-form" class="product-form" method="post" action="/product/update">
+            <label>
+                <span>商品 ID</span>
+                <input type="number" name="id" id="product-id" placeholder="先点击左侧编辑按钮自动带入" required>
+            </label>
+
+            <label>
+                <span>商品名称</span>
+                <input type="text" name="productName" id="product-name" placeholder="请输入商品名称" required>
+            </label>
+
+            <label>
+                <span>商品库存</span>
+                <input type="number" name="productNum" id="product-num" min="0" placeholder="请输入库存数量" required>
+            </label>
+
+            <label>
+                <span>商品图片地址</span>
+                <input type="text" name="productImage" id="product-image" placeholder="请输入图片 URL">
+            </label>
+
+            <label>
+                <span>商品跳转地址</span>
+                <input type="text" name="productUrl" id="product-url" placeholder="请输入详情 URL">
+            </label>
+
+            <div class="form-actions">
+                <button class="submit-btn" type="submit">提交修改</button>
+            </div>
+            <p id="form-message" class="form-message"></p>
+        </form>
+    </aside>
+</section>

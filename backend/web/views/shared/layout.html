@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ if .Title }}{{ .Title }}{{ else }}商品后台管理{{ end }}</title>
+    <link rel="stylesheet" href="/assets/css/product.css">
+</head>
+<body>
+<div class="page-shell">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Product Admin</p>
+            <h1>商品后台管理</h1>
+        </div>
+        <nav class="topbar-nav">
+            <a href="/product/all">商品</a>
+            <a href="/order">订单</a>
+            <a href="/user">用户</a>
+        </nav>
+    </header>
+
+    <main class="page-content">
+        {{ yield . }}
+    </main>
+</div>
+
+<script src="/assets/lib/dom-helper.js"></script>
+<script src="/assets/js/product.js"></script>
+<script src="/assets/js/user.js"></script>
+</body>
+</html>

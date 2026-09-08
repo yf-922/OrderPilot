@@ -1,0 +1,72 @@
+<section class="content-grid">
+    <section class="panel">
+        <div class="panel-head">
+            <div>
+                <p class="eyebrow">User Access</p>
+                <h2>用户登录校验</h2>
+            </div>
+            <span class="badge">用户模块</span>
+        </div>
+
+        <div class="panel-banner">
+            <img src="/assets/img/product-badge.svg" alt="用户模块标识">
+            <p>
+                当前页面用于验证用户登录和创建新用户。
+                登录时会校验数据库中的密码哈希值，新增用户时会先对密码做哈希再入库。
+            </p>
+        </div>
+
+        <form id="user-login-form" class="product-form" method="post" action="/user/login">
+            <label>
+                <span>用户名</span>
+                <input type="text" name="userName" id="login-user-name" placeholder="请输入用户名" required>
+            </label>
+
+            <label>
+                <span>密码</span>
+                <input type="password" name="password" id="login-password" placeholder="请输入密码" required>
+            </label>
+
+            <div class="form-actions">
+                <button class="submit-btn" type="submit">验证登录</button>
+            </div>
+            <p id="user-login-message" class="form-message"></p>
+        </form>
+    </section>
+
+    <aside class="panel edit-panel">
+        <div class="panel-head">
+            <div>
+                <p class="eyebrow">Create User</p>
+                <h2>新增用户</h2>
+            </div>
+        </div>
+
+        <form id="user-create-form" class="product-form" method="post" action="/user/create">
+            <label>
+                <span>用户 ID</span>
+                <input type="number" name="id" id="create-user-id" min="1" placeholder="请输入用户 ID" required>
+            </label>
+
+            <label>
+                <span>昵称</span>
+                <input type="text" name="nickName" id="create-nick-name" placeholder="请输入昵称" required>
+            </label>
+
+            <label>
+                <span>用户名</span>
+                <input type="text" name="userName" id="create-user-name" placeholder="请输入用户名" required>
+            </label>
+
+            <label>
+                <span>密码</span>
+                <input type="password" name="password" id="create-password" placeholder="请输入密码" required>
+            </label>
+
+            <div class="form-actions">
+                <button class="submit-btn" type="submit">创建用户</button>
+            </div>
+            <p id="user-create-message" class="form-message"></p>
+        </form>
+    </aside>
+</section>

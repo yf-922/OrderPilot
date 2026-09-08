@@ -1,0 +1,80 @@
+openapi: 3.0.3
+info:
+  title: GoWorks Product API
+  version: 1.0.0
+  description: User, product and transactional order APIs.
+servers:
+  - url: http://localhost:8080
+paths:
+  /health:
+    get:
+      summary: Liveness probe
+      responses:
+        '200': { description: Service process is alive }
+  /ready:
+    get:
+      summary: Readiness probe
+      responses:
+        '200': { description: Database is reachable }
+        '503': { description: Dependency unavailable }
+  /user/login:
+    post:
+      summary: Login and issue a bearer token
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [userName, password]
+              properties:
+                userName: { type: string }
+                password: { type: string, format: password }
+      responses:
+        '200': { description: Authenticated }
+        '401': { description: Invalid credentials }
+  /product/{id}:
+    get:
+      security: [{ bearerAuth: [] }]
+      summary: Get a product
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200': { description: Product found }
+        '401': { description: Missing or invalid token }
+        '404': { description: Product not found }
+  /order/create:
+    post:
+      security: [{ bearerAuth: [] }]
+      summary: Atomically create an order and deduct inventory
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, minLength: 8, maxLength: 128 }
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [userID, productID, quantity, orderStatus]
+              properties:
+                userID: { type: integer, format: int64 }
+                productID: { type: integer, format: int64 }
+                quantity: { type: integer, format: int64, minimum: 1 }
+                orderStatus: { type: integer, minimum: 0, maximum: 2 }
+      responses:
+        '200': { description: Order created or an idempotent retry returned }
+        '400': { description: Invalid request }
+        '401': { description: Missing or invalid token }
+        '403': { description: User identity mismatch }
+        '409': { description: Insufficient inventory }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
