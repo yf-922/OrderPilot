@@ -392,3 +392,6 @@ a {
         max-width: 100%;
     }
 }
+
+/* HTML hidden 属性必须始终隐藏登出按钮，避免脚本加载前闪现。 */
+[hidden] { display: none !important; }

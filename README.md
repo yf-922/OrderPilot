@@ -106,6 +106,7 @@ python tests/api_smoke_test.py
 
 - `tests/api_test_cases.md`
 - `tests/test_report.md`
+- `docs/interview-project-sheet.md`
 
 ## CI 说明
 

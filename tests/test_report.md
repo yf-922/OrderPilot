@@ -1,6 +1,6 @@
 # Verification report
 
-Verified locally on Windows with Go 1.27.1 and Docker Engine 29.6.2.
+Verified locally on Windows on 2026-09-09 with Go 1.27.1 and Docker Engine 29.6.2.
 
 | Gate | Result |
 |---|---|
