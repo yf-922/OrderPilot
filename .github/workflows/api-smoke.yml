@@ -51,12 +51,23 @@ jobs:
 
       - name: Run Go formatter check
         shell: bash
-        run: test -z "$(gofmt -l backend common datamodels repositories services)"
+        run: test -z "$(gofmt -l agent backend common datamodels repositories services tests)"
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install browser test dependencies
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
 
       - name: Check API smoke test syntax
         run: python -m py_compile tests/api_smoke_test.py
@@ -76,6 +87,17 @@ jobs:
 
       - name: Run HTTP API smoke tests
         run: python tests/api_smoke_test.py
+
+      - name: Run Agent browser workflow
+        run: npm run test:e2e
+
+      - name: Upload browser traces after failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results
+          if-no-files-found: ignore
 
       - name: Show container logs after failure
         if: failure()

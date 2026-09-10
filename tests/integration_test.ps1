@@ -45,8 +45,19 @@ if ($conflict.StatusCode.value__ -ne 409) { throw "idempotency conflict: expecte
 $orderList = (Invoke-WebRequest "$base/order/list?page=1&pageSize=10" -Headers $headers -UseBasicParsing).Content | ConvertFrom-Json
 if ($orderList.data.total -lt 1) { throw 'owned order list is empty' }
 
-$cancel = Invoke-WebRequest "$base/order/delete" -Method Post -Headers $headers -Body @{ id="$firstID" } -UseBasicParsing
-Assert-Status $cancel.StatusCode 200 'cancel order'
+$agentStatus = (Invoke-WebRequest "$base/agent/status" -Headers $headers -UseBasicParsing).Content | ConvertFrom-Json
+if ($agentStatus.data.mode -eq 'demo') {
+  $chatHeaders = @{ Authorization = "Bearer $token"; 'Content-Type' = 'application/json' }
+  $chatBody = @{ message = "cancel order $firstID"; conversationId = '' } | ConvertTo-Json
+  $chat = (Invoke-WebRequest "$base/agent/chat" -Method Post -Headers $chatHeaders -Body $chatBody -UseBasicParsing).Content | ConvertFrom-Json
+  if (-not $chat.data.confirmation.token) { throw 'agent did not require cancellation confirmation' }
+  $confirmBody = @{ conversationId = $chat.data.conversationId; token = $chat.data.confirmation.token } | ConvertTo-Json
+  $cancel = Invoke-WebRequest "$base/agent/confirm" -Method Post -Headers $chatHeaders -Body $confirmBody -UseBasicParsing
+  Assert-Status $cancel.StatusCode 200 'agent cancel order'
+} else {
+  $cancel = Invoke-WebRequest "$base/order/delete" -Method Post -Headers $headers -Body @{ id="$firstID" } -UseBasicParsing
+  Assert-Status $cancel.StatusCode 200 'cancel order'
+}
 $afterStock = ((Invoke-WebRequest "$base/product/1" -Headers $headers -UseBasicParsing).Content | ConvertFrom-Json).data.productNum
 if ([int64]$afterStock -ne [int64]$beforeStock) { throw "cancel did not restore stock: before=$beforeStock after=$afterStock" }
 

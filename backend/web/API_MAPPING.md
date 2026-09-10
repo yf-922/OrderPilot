@@ -66,6 +66,26 @@
 - Service 方法：`UserService.AddUser`
 - Repository 方法：`UserManagerRepository.Insert`
 
+## AI 客服 Agent
+
+- 页面文件：`backend/web/views/agent/view.html`
+- 前端脚本：`backend/web/asserts/js/agent.js`
+- 控制器：`backend/web/controllers/agent_controller.go`
+- 编排层：`agent/service.go`
+- 模型适配器：`agent/compatible_provider.go`
+
+### 对话与工具调用
+
+- 对话入口：`POST /agent/chat`
+- Agent 根据意图调用商品或订单 Service，用户 ID 由 Bearer Token 注入
+- 工具结果返回模型生成最终回答，同时在页面展示调用轨迹
+
+### 取消确认
+
+- 模型只调用 `prepare_cancel_order` 生成短期确认令牌，不直接修改订单
+- 用户点击确认后请求 `POST /agent/confirm`
+- 后端校验令牌、用户和会话，再调用 `OrderService.CancelOrder` 取消订单并返还库存
+
 ## 学后端时的阅读建议
 
 当你想学习某个功能时，不要先盯页面样式。

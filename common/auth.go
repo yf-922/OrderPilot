@@ -62,7 +62,7 @@ func RequireAuth(ctx iris.Context) {
 	// 业务 JSON 接口仍然必须携带 Bearer Token，避免把页面可访问误变成数据可访问。
 	if ctx.Method() == "GET" && strings.Contains(ctx.GetHeader("Accept"), "text/html") {
 		path := ctx.Path()
-		if path == "/product/all" || path == "/order" {
+		if path == "/product/all" || path == "/order" || path == "/agent" {
 			ctx.Next()
 			return
 		}

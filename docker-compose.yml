@@ -37,6 +37,12 @@ services:
       APP_ADDR: 0.0.0.0:8080
       AUTH_SECRET: ${AUTH_SECRET:-local-development-secret-change-me-1234567890}
       MAX_REQUEST_BODY_BYTES: ${MAX_REQUEST_BODY_BYTES:-1048576}
+      AI_PROVIDER: ${AI_PROVIDER:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      GROK_API_KEY: ${GROK_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.x.ai/v1}
+      AI_MODEL: ${AI_MODEL:-grok-4-fast-non-reasoning}
     ports: ["8080:8080"]
     depends_on:
       mysql: { condition: service_healthy }

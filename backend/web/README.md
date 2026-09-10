@@ -15,6 +15,7 @@
 | 用户页 | `GET /user` | 登录、注册、当前用户资料编辑 |
 | 商品页 | `GET /product/all` | 商品查看、新增、编辑、删除 |
 | 订单页 | `GET /order` | 当前用户订单查询、创建、确认、取消 |
+| AI 客服 | `GET /agent` | 自然语言查询、工具轨迹和订单取消确认 |
 
 页面登录成功后将 Bearer Token 仅保存到浏览器 `sessionStorage`。商品和订单页通过该 Token 调用受保护 API；页面本身可以匿名打开，订单及其他用户数据不会在 HTML 中预渲染。
 
@@ -23,6 +24,7 @@
 - 用户：`POST /user/login`、`POST /user/create`、`GET /user/{id}`、`POST /user/update`、`POST /user/delete`
 - 商品：`GET /product/list`、`GET /product/{id}`、`POST /product/create`、`POST /product/update`、`POST /product/delete`
 - 订单：`GET /order/list`、`GET /order/{id}`、`POST /order/create`、`POST /order/update`、`POST /order/delete`
+- Agent：`GET /agent/status`、`POST /agent/chat`、`POST /agent/confirm`、`POST /agent/reset`
 
 完整参数、响应和错误状态码见 [`docs/openapi.yaml`](../../docs/openapi.yaml)。
 

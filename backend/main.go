@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"product/agent"
 	"product/backend/web/controllers"
 	"product/common"
 	"product/repositories"
@@ -112,6 +113,14 @@ func main() {
 	order := mvc.New(orderParty)
 	order.Register(ctx, orderService)
 	order.Handle(new(controllers.OrderController))
+
+	// 注册订单客服 Agent。模型仅能调用受控业务工具，写操作需要用户二次确认。
+	agentService := agent.NewService(agent.NewProviderFromEnv(), orderService, productService)
+	agentParty := app.Party("/agent")
+	agentParty.Use(common.RequireAuth)
+	agentMVC := mvc.New(agentParty)
+	agentMVC.Register(agentService)
+	agentMVC.Handle(new(controllers.AgentController))
 
 	// 启动 Web 服务。
 	addr := os.Getenv("APP_ADDR")

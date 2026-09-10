@@ -1,5 +1,9 @@
 # Architecture and interview notes
 
+## AI agent flow
+
+The order-support Agent is a separate orchestration layer. It calls existing service interfaces and never repositories directly. The authenticated user ID is injected by the controller, while the model receives no `user_id` tool argument. Read-only tools run immediately; cancellation requires a short-lived, single-use confirmation capability before invoking the transactional order cancellation service. See `docs/agent-design.md`.
+
 ```text
 HTTP (Iris)
   -> Controller: parse/validate request, map status codes

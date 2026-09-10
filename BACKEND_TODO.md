@@ -13,6 +13,7 @@
 - 健康检查、Request ID、结构化日志、安全响应头和请求体大小限制
 - Docker Compose、非 root API 容器、数据库兼容迁移和 GitHub Actions CI
 - Go 单元/竞态/并发集成测试、Python/PowerShell HTTP 测试、OpenAPI 和架构文档
+- Grok-compatible 订单客服 Agent、受控工具调用、会话隔离、人工确认、离线评测和 Playwright UI 测试
 
 ## 后续可选增强
 
@@ -25,4 +26,4 @@
 
 ## 面试演示
 
-运行 `docker compose up -d --build --wait` 后执行 `make integration`，重点讲解订单事务、`SELECT ... FOR UPDATE`、唯一幂等索引、Redis 降级和并发测试设计。
+运行 `docker compose up -d --build --wait` 后执行 `make integration` 和 `make e2e`，重点讲解订单事务、`SELECT ... FOR UPDATE`、唯一幂等索引，以及 Agent 的工具调用、身份注入、人工确认和离线评测。

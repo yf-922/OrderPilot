@@ -395,3 +395,44 @@ a {
 
 /* HTML hidden 属性必须始终隐藏登出按钮，避免脚本加载前闪现。 */
 [hidden] { display: none !important; }
+
+.agent-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, .8fr); gap: 20px; }
+.agent-chat { display: flex; flex-direction: column; min-height: 680px; }
+.agent-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px; border-bottom: 1px solid var(--line); }
+.agent-header h2 { margin: 0; font-size: 24px; }
+.agent-runtime { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.status-dot { color: var(--accent-dark); font-weight: 600; }
+.status-dot::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: #1c9b67; }
+.agent-messages { flex: 1; min-height: 430px; max-height: 520px; overflow-y: auto; padding: 24px; background: #f8f8f6; }
+.chat-message { max-width: 78%; margin-bottom: 18px; }
+.chat-message p { margin: 5px 0 0; padding: 13px 15px; border: 1px solid var(--line); border-radius: 6px; background: #fff; line-height: 1.65; white-space: pre-wrap; }
+.chat-message.user { margin-left: auto; }
+.chat-message.user p { color: #fff; border-color: var(--accent); background: var(--accent); }
+.chat-role { color: var(--muted); font-size: 12px; }
+.agent-suggestions { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 24px 0; border-top: 1px solid var(--line); }
+.agent-suggestions button { padding: 8px 12px; border: 1px solid var(--line); border-radius: 5px; background: #fff; color: var(--ink); cursor: pointer; }
+.agent-composer { padding: 14px 24px 24px; }
+.agent-composer textarea { width: 100%; resize: vertical; min-height: 76px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+.agent-composer-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+.agent-composer-actions .submit-btn { width: 110px; border-radius: 6px; }
+.agent-inspector { align-self: start; }
+.agent-traces { max-height: 430px; overflow: auto; padding: 0 20px 20px; }
+.trace-item { margin-bottom: 12px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.trace-head { display: flex; justify-content: space-between; padding: 10px 12px; background: #f2f4f3; font-size: 13px; }
+.trace-item pre { max-height: 180px; margin: 0; padding: 12px; overflow: auto; white-space: pre-wrap; word-break: break-all; font-size: 11px; }
+.agent-boundaries { padding: 20px 24px; border-top: 1px solid var(--line); }
+.agent-boundaries h3 { margin-top: 0; font-size: 15px; }
+.agent-metrics { display: grid; gap: 10px; margin: 0; }
+.agent-metrics div { display: flex; justify-content: space-between; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.agent-metrics dt { color: var(--muted); font-size: 13px; }
+.agent-metrics dd { margin: 0; font-size: 13px; font-weight: 600; }
+.confirmation-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 24px 18px; padding: 12px 14px; border: 1px solid #d8a5a5; border-radius: 6px; background: #fff5f5; }
+.danger-confirm-btn { padding: 9px 13px; border: 0; border-radius: 5px; background: var(--danger); color: #fff; cursor: pointer; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+@media (max-width: 960px) {
+    .agent-layout { grid-template-columns: 1fr; }
+    .agent-chat { min-height: 600px; }
+    .agent-header { align-items: flex-start; flex-direction: column; }
+    .chat-message { max-width: 90%; }
+}

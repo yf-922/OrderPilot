@@ -1,0 +1,56 @@
+<section class="agent-layout">
+    <section class="agent-chat panel">
+        <header class="agent-header">
+            <div>
+                <p class="eyebrow">Order Support Agent</p>
+                <h2>订单客服 Agent</h2>
+            </div>
+            <div class="agent-runtime">
+                <span id="agent-mode" class="status-dot">检测中</span>
+                <span id="agent-model" class="muted-text"></span>
+            </div>
+        </header>
+
+        <div id="agent-messages" class="agent-messages" aria-live="polite">
+            <article class="chat-message assistant">
+                <span class="chat-role">客服 Agent</span>
+                <p>你好，我可以查询商品库存、查看你的订单，并在你确认后取消待处理订单。</p>
+            </article>
+        </div>
+
+        <div class="agent-suggestions" aria-label="快捷问题">
+            <button type="button" data-prompt="我的最近订单有哪些？">最近订单</button>
+            <button type="button" data-prompt="哪些商品库存不足？">低库存商品</button>
+            <button type="button" data-prompt="查询订单 1 的状态">查询订单状态</button>
+        </div>
+
+        <form id="agent-form" class="agent-composer">
+            <label class="sr-only" for="agent-input">向订单客服提问</label>
+            <textarea id="agent-input" maxlength="2000" rows="3" placeholder="例如：我的最近订单有哪些？" required></textarea>
+            <div class="agent-composer-actions">
+                <button id="agent-reset" class="action-btn" type="button" title="清空当前会话">清空</button>
+                <button id="agent-send" class="submit-btn" type="submit">发送</button>
+            </div>
+        </form>
+    </section>
+
+    <aside class="agent-inspector panel">
+        <header class="panel-head">
+            <div>
+                <p class="eyebrow">Execution Trace</p>
+                <h2>工具调用轨迹</h2>
+            </div>
+        </header>
+        <div id="agent-traces" class="agent-traces">
+            <p class="muted-text">Agent 调用业务工具后，将在这里展示参数、结果与耗时。</p>
+        </div>
+        <div class="agent-boundaries">
+            <h3>本轮统计</h3>
+            <dl class="agent-metrics">
+                <div><dt>工具调用</dt><dd id="agent-tool-count">0</dd></div>
+                <div><dt>累计耗时</dt><dd id="agent-tool-duration">0 ms</dd></div>
+                <div><dt>Token</dt><dd id="agent-token-count">0</dd></div>
+            </dl>
+        </div>
+    </aside>
+</section>

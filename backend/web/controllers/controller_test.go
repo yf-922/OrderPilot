@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"product/agent"
 	"product/common"
 	"product/datamodels"
 	"product/repositories"
@@ -117,4 +118,31 @@ func TestOrderControllerMapsUnexpectedServiceValidation(t *testing.T) {
 	service := &orderServiceHTTPMock{createErr: services.ErrInvalidOrder}
 	e := httptest.New(t, mountMVC("/order", true, service, new(OrderController)))
 	e.POST("/order/create").WithHeader("Authorization", bearer(1)).WithHeader("Idempotency-Key", "request-key-123").WithFormField("userID", "1").WithFormField("productID", "1").WithFormField("quantity", "1").WithFormField("orderStatus", "0").Expect().Status(iris.StatusBadRequest).Body().Contains("invalid order request")
+}
+
+type agentServiceHTTPMock struct {
+	userID int64
+}
+
+func (m *agentServiceHTTPMock) Status() agent.Status {
+	return agent.Status{Provider: "local", Model: "demo", Mode: "demo"}
+}
+func (m *agentServiceHTTPMock) Chat(_ context.Context, userID int64, request agent.ChatRequest) (agent.ChatResponse, error) {
+	m.userID = userID
+	return agent.ChatResponse{ConversationID: "chat-1", Message: "订单查询完成", Provider: "local", Model: "demo"}, nil
+}
+func (m *agentServiceHTTPMock) Confirm(context.Context, int64, agent.ConfirmRequest) (agent.ChatResponse, error) {
+	return agent.ChatResponse{ConversationID: "chat-1", Message: "订单已取消"}, nil
+}
+func (m *agentServiceHTTPMock) Reset(int64, string) {}
+
+func TestAgentControllerAuthenticationAndIdentityInjection(t *testing.T) {
+	service := &agentServiceHTTPMock{}
+	e := httptest.New(t, mountMVC("/agent", true, service, new(AgentController)))
+	e.GET("/agent/status").Expect().Status(iris.StatusUnauthorized)
+	e.POST("/agent/chat").WithJSON(agent.ChatRequest{Message: "我的订单"}).Expect().Status(iris.StatusUnauthorized)
+	e.POST("/agent/chat").WithHeader("Authorization", bearer(42)).WithJSON(agent.ChatRequest{Message: "我的订单"}).Expect().Status(iris.StatusOK).Body().Contains("订单查询完成")
+	if service.userID != 42 {
+		t.Fatalf("controller injected user %d, want 42", service.userID)
+	}
 }

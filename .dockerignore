@@ -5,3 +5,9 @@
 .idea
 fronted
 __pycache__
+node_modules
+test-results
+playwright-report
+.codex-cache
+coverage
+coverage.out
