@@ -64,7 +64,7 @@ func summarizeLocalTool(name, content string) string {
 		return "工具返回了无法解析的结果，请稍后重试。"
 	}
 	if ok, _ := result["ok"].(bool); !ok {
-		return fmt.Sprintf("查询没有完成：%v", result["error"])
+		return toolFailureMessage(result["error"])
 	}
 	switch name {
 	case "search_products":
@@ -78,5 +78,23 @@ func summarizeLocalTool(name, content string) string {
 		return fmt.Sprintf("订单 %v 可以取消。该操作会恢复库存，请点击确认按钮后执行。", result["orderId"])
 	default:
 		return "工具调用已完成。"
+	}
+}
+
+func toolFailureMessage(value any) string {
+	code, _ := value.(string)
+	switch code {
+	case "order not found":
+		return "查询没有完成：未找到你名下的这个订单，请核对订单号。"
+	case "product query failed", "order query failed":
+		return "查询没有完成：服务暂时不可用，请稍后重试。"
+	case "invalid arguments", "order_id must be a positive integer":
+		return "查询没有完成：请求参数无效，请核对后重试。"
+	case "only pending orders can be cancelled":
+		return "操作没有完成：只有待处理订单可以取消。"
+	case "unknown tool":
+		return "操作没有完成：暂不支持此请求。"
+	default:
+		return "查询没有完成，请稍后重试。"
 	}
 }

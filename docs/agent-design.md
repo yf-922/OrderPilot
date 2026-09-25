@@ -46,7 +46,7 @@ Agent 将大模型接入已有商品订单业务，而不是让模型直接访�
 
 `agent/testdata/golden.json` 是固定的 30 题 v1 黄金集：15 条基础题、9 条表达变体、6 条对抗/异常题。每条保留输入、预期工具和参数、最终回答关键词、工具成功与否、是否需人工确认。变更题集时应升级版本号，不能为了提高分数临时改标注。
 
-此外，`agent/testdata/challenge.json` 包含口语、错别字、歧义、越权诱导和不支持请求。`TestAgentChallengeEvaluation` 用固定种子打乱执行顺序，保留真实质量失败，不把每条自然语言都假设为可识别。`TestAgentChaosEvaluation` 用固定种子随机注入未知工具、非法 JSON、非法订单号、商品服务超时和 Provider 超时；只要求失败结果明确、无确认和无订单副作用。可用 `AGENT_CHALLENGE_SEED`、`AGENT_CHAOS_SEED` 改变并复现顺序。
+此外，`agent/testdata/challenge.json` 包含 30 条口语、错别字、歧义、多意图、越权诱导和不支持请求。`TestAgentChallengeEvaluation` 用固定种子分层抽样，保留真实质量失败，不把每条自然语言都假设为可识别。在线模式默认最多执行 12 条、消耗 20,000 Token 后停止，可通过 `AGENT_CHALLENGE_MAX_CASES` 和 `AGENT_CHALLENGE_MAX_TOKENS` 调整。`TestAgentChaosEvaluation` 用固定种子随机注入未知工具、非法 JSON、非法订单号、商品服务超时和 Provider 超时；只要求失败结果明确、无确认和无订单副作用。可用 `AGENT_CHALLENGE_SEED`、`AGENT_CHAOS_SEED` 改变并复现顺序。
 
 `TestAgentGoldenEvaluation` 每题重复 5 次，用相同 mock 业务数据重新建立会话，对工具轨迹、参数、身份绑定、结果、确认状态及确认前无副作用自动判分。报告逐次保留通过状态、失败原因、步骤、Token 和耗时，并按难度汇总。CI 强制运行本地确定性回归，失败即阻断。Service 测试另外覆盖跨用户确认和令牌重放。
 
@@ -61,6 +61,8 @@ go test ./agent -run '^TestAgentGoldenEvaluation$' -count=1 -v
 配置服务端 Grok Key 后，显式设置 `AGENT_EVAL_LIVE=1`，用**同一题集**运行真实模型评测。它会实际调用付费 API（最多 150 个任务，每个任务可能多轮模型调用）；请先确认预算，并将报告路径设置在仓库外，避免意外提交模型输出。不要将本地 Provider 的 0 Token/极低延迟当作真实模型成本。在线模型答案具有开放性，关键词断言属于保守自动筛查，失败案例应人工复核，再按预先定义的评分点改进标注。当前题集以单工具任务为主，尚未覆盖复杂多工具编排、工具超时注入或线上用户分布，不能据此声称生产效果。
 
 挑战集默认使用不耗费 API 的本地 Provider；设置 `AGENT_CHALLENGE_LIVE=1` 后才调用真实模型，12 题可能产生多轮付费调用。工具执行失败时，编排层会以结构化工具错误覆盖模型可能编造的成功回答，避免误报完成；`TestAgentFailureResultOverridesModelSuccess` 固化了这一兜底。当前自动评分仍不能代替人工审阅，尤其是开放式回答和复杂多意图请求。
+
+当前挑战集的本地与小规模 Grok 报告、评分版本差异见 `docs/challenge-eval-results.md`。故障兜底对外只返回中文业务提示，不泄漏内部错误码。
 
 在线冒烟可另外设置 `AGENT_EVAL_CASE=B04` 和 `AGENT_EVAL_REPETITIONS=1`，只执行一题一次；不设置时默认全量 30 题各 5 次。直接运行 `go test` 不会自动读取 `.env`，需要先把 `GROK_API_KEY`、`AI_BASE_URL`、`AI_MODEL` 导入当前终端环境。Docker Compose 则会自动读取根目录 `.env`。第三方兼容网关的模型名和支持的 API 协议应以实际响应验证；本项目当前使用 Chat Completions + Function Calling。
 

@@ -187,7 +187,11 @@ func scoreAgentCase(tc evalCase, response ChatResponse, chatErr error, orders *o
 		}
 	} else {
 		if len(response.ToolCalls) != 1 || response.ToolCalls[0].Name != tc.Tool {
-			return fmt.Sprintf("tool path mismatch: got %+v, want %s", response.ToolCalls, tc.Tool)
+			names := make([]string, 0, len(response.ToolCalls))
+			for _, call := range response.ToolCalls {
+				names = append(names, call.Name)
+			}
+			return fmt.Sprintf("tool path mismatch: got %v, want %s", names, tc.Tool)
 		}
 		trace := response.ToolCalls[0]
 		if trace.Success != tc.ToolSuccess {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 
 	"product/datamodels"
@@ -179,5 +180,29 @@ func TestNormalizeOrderListArgumentsKeepsBusinessDefaults(t *testing.T) {
 	}
 	if args["page"] != float64(1) || args["page_size"] != float64(10) {
 		t.Fatalf("unexpected normalized arguments: %+v", args)
+	}
+}
+
+func TestToolFailureMessagesDoNotExposeInternalErrors(t *testing.T) {
+	cases := []struct {
+		code string
+		want string
+	}{
+		{"order not found", "未找到你名下的这个订单"},
+		{"product query failed", "服务暂时不可用"},
+		{"order query failed", "服务暂时不可用"},
+		{"invalid arguments", "请求参数无效"},
+		{"order_id must be a positive integer", "请求参数无效"},
+		{"only pending orders can be cancelled", "只有待处理订单可以取消"},
+		{"unknown tool", "暂不支持此请求"},
+		{"secret-internal-stack", "请稍后重试"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.code, func(t *testing.T) {
+			got := summarizeLocalTool("get_order_status", string(mustJSON(map[string]any{"ok": false, "error": tc.code})))
+			if !strings.Contains(got, tc.want) || strings.Contains(got, tc.code) {
+				t.Fatalf("unsafe fallback %q for %q", got, tc.code)
+			}
+		})
 	}
 }
