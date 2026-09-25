@@ -126,6 +126,17 @@ func TestAgentConversationOwnershipAndInputLimits(t *testing.T) {
 	}
 }
 
+func TestAgentExplicitHumanRequestCreatesHandoff(t *testing.T) {
+	svc := NewService(NewLocalProvider(), &orderServiceMock{}, &productServiceMock{})
+	response, err := svc.Chat(context.Background(), 42, ChatRequest{Message: "我要转人工投诉"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if response.Handoff == nil || response.Handoff.Reason != "explicit_human_request" || len(response.ToolCalls) != 0 {
+		t.Fatalf("unexpected handoff: %+v", response)
+	}
+}
+
 func TestAgentFiltersLowStockProducts(t *testing.T) {
 	products := &productServiceMock{items: []*datamodels.Product{{ID: 1, ProductName: "Low", ProductNum: 3}, {ID: 2, ProductName: "Enough", ProductNum: 20}}}
 	svc := NewService(NewLocalProvider(), &orderServiceMock{}, products)

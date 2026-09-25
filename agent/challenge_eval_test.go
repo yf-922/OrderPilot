@@ -89,6 +89,8 @@ func TestAgentChallengeEvaluation(t *testing.T) {
 		response, chatErr := svc.Chat(ctx, 42, ChatRequest{Message: tc.Input})
 		cancel()
 		result := evalResult{ID: tc.ID, Tier: tc.Tier, Run: 1, Steps: len(response.ToolCalls), InputTokens: response.Usage.InputTokens, OutputTokens: response.Usage.OutputTokens, Tokens: response.Usage.TotalTokens, LatencyMS: time.Since(started).Milliseconds()}
+		result.ToolPathCorrect, result.ArgumentsCorrect = scoreToolDimensions(tc.Tool, tc.Tools, tc.Arguments, tc.ToolArguments, response.ToolCalls)
+		result.Answer, result.ObservedTools = response.Message, response.ToolCalls
 		if len(tc.Tools) > 0 {
 			result.Reason = scoreChallengeTools(tc, response, chatErr, orders)
 		} else {

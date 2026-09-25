@@ -15,7 +15,7 @@ func NewLocalProvider() *LocalProvider { return &LocalProvider{} }
 func (p *LocalProvider) Name() string  { return "local" }
 func (p *LocalProvider) Model() string { return "deterministic-demo" }
 
-var orderIDPattern = regexp.MustCompile(`\d+`)
+var orderIDPattern = regexp.MustCompile(`-?\d+`)
 
 func (p *LocalProvider) Complete(_ context.Context, input CompletionRequest) (Completion, error) {
 	if len(input.Messages) == 0 {
@@ -32,7 +32,7 @@ func (p *LocalProvider) Complete(_ context.Context, input CompletionRequest) (Co
 	case (strings.Contains(text, "取消") || strings.Contains(lower, "cancel")) && firstOrderID(text) > 0:
 		call.Name = "prepare_cancel_order"
 		call.Arguments = mustJSON(map[string]any{"order_id": firstOrderID(text)})
-	case (strings.Contains(text, "订单") || strings.Contains(lower, "order")) && firstOrderID(text) > 0:
+	case (strings.Contains(text, "订单") || strings.Contains(lower, "order")) && firstOrderID(text) != 0:
 		call.Name = "get_order_status"
 		call.Arguments = mustJSON(map[string]any{"order_id": firstOrderID(text)})
 	case strings.Contains(text, "订单") || strings.Contains(text, "购买") || strings.Contains(lower, "order"):

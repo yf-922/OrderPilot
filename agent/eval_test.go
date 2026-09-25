@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"testing"
@@ -26,16 +27,20 @@ type evalCase struct {
 }
 
 type evalResult struct {
-	ID           string `json:"id"`
-	Tier         string `json:"tier"`
-	Run          int    `json:"run"`
-	Passed       bool   `json:"passed"`
-	Reason       string `json:"reason,omitempty"`
-	Steps        int    `json:"steps"`
-	InputTokens  int    `json:"inputTokens"`
-	OutputTokens int    `json:"outputTokens"`
-	Tokens       int    `json:"tokens"`
-	LatencyMS    int64  `json:"latencyMs"`
+	ID               string      `json:"id"`
+	Tier             string      `json:"tier"`
+	Run              int         `json:"run"`
+	Passed           bool        `json:"passed"`
+	Reason           string      `json:"reason,omitempty"`
+	Steps            int         `json:"steps"`
+	InputTokens      int         `json:"inputTokens"`
+	OutputTokens     int         `json:"outputTokens"`
+	Tokens           int         `json:"tokens"`
+	LatencyMS        int64       `json:"latencyMs"`
+	ToolPathCorrect  bool        `json:"toolPathCorrect"`
+	ArgumentsCorrect *bool       `json:"argumentsCorrect,omitempty"`
+	Answer           string      `json:"answer,omitempty"`
+	ObservedTools    []ToolTrace `json:"observedTools,omitempty"`
 }
 
 func TestAgentGoldenEvaluation(t *testing.T) {
@@ -113,6 +118,8 @@ evaluation:
 			response, chatErr := svc.Chat(ctx, 42, ChatRequest{Message: tc.Input})
 			cancel()
 			result := evalResult{ID: tc.ID, Tier: tc.Tier, Run: run, Steps: len(response.ToolCalls), InputTokens: response.Usage.InputTokens, OutputTokens: response.Usage.OutputTokens, Tokens: response.Usage.TotalTokens, LatencyMS: time.Since(start).Milliseconds()}
+			result.ToolPathCorrect, result.ArgumentsCorrect = scoreToolDimensions(tc.Tool, nil, tc.Arguments, nil, response.ToolCalls)
+			result.Answer, result.ObservedTools = response.Message, response.ToolCalls
 			consumedTokens += result.Tokens
 			result.Reason = scoreAgentCase(tc, response, chatErr, orders)
 			result.Passed = result.Reason == ""
@@ -172,6 +179,51 @@ evaluation:
 			t.Fatal(err)
 		}
 	}
+}
+
+func scoreToolDimensions(single string, multiple []string, arguments map[string]any, multipleArguments map[string]map[string]any, observed []ToolTrace) (bool, *bool) {
+	expected := multiple
+	if len(expected) == 0 && single != "" {
+		expected = []string{single}
+	}
+	if len(observed) != len(expected) {
+		return false, nil
+	}
+	want := make(map[string]map[string]any, len(expected))
+	for _, name := range expected {
+		if len(multiple) > 0 {
+			want[name] = multipleArguments[name]
+		} else {
+			want[name] = arguments
+		}
+	}
+	for _, trace := range observed {
+		if _, ok := want[trace.Name]; !ok {
+			return false, nil
+		}
+		delete(want, trace.Name)
+	}
+	if len(want) != 0 {
+		return false, nil
+	}
+	correct := true
+	for _, trace := range observed {
+		var got map[string]any
+		if json.Unmarshal(trace.Arguments, &got) != nil {
+			correct = false
+			break
+		}
+		var expectedArguments map[string]any
+		if len(multiple) > 0 {
+			expectedArguments = multipleArguments[trace.Name]
+		} else {
+			expectedArguments = arguments
+		}
+		if !reflect.DeepEqual(got, expectedArguments) {
+			correct = false
+		}
+	}
+	return true, &correct
 }
 
 func scoreAgentCase(tc evalCase, response ChatResponse, chatErr error, orders *orderServiceMock) string {
