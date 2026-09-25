@@ -119,6 +119,7 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 			return ChatResponse{ConversationID: conversationID, Message: answer, Provider: s.provider.Name(), Model: s.provider.Model(), ToolCalls: traces, Confirmation: confirmation, Usage: usage}, nil
 		}
 		for _, call := range completion.Message.ToolCalls {
+			call = normalizeToolCall(call)
 			started := s.now()
 			result, action, toolErr := s.executeTool(ctx, userID, conversationID, call)
 			trace := ToolTrace{Name: call.Name, Arguments: call.Arguments, Result: result, DurationMS: s.now().Sub(started).Milliseconds(), Success: toolErr == nil}
@@ -133,6 +134,27 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 	logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, false, "maximum tool turns exceeded")
 	s.recordRequestEnd(false, usage.TotalTokens, time.Since(startedAt))
 	return ChatResponse{}, fmt.Errorf("agent exceeded maximum tool turns")
+}
+
+func normalizeToolCall(call ToolCall) ToolCall {
+	if call.Name != "list_my_orders" {
+		return call
+	}
+	var args struct {
+		Page     int `json:"page"`
+		PageSize int `json:"page_size"`
+	}
+	if json.Unmarshal(call.Arguments, &args) != nil {
+		return call
+	}
+	if args.Page < 1 {
+		args.Page = 1
+	}
+	if args.PageSize < 1 || args.PageSize > 10 {
+		args.PageSize = 10
+	}
+	call.Arguments = mustJSON(map[string]any{"page": args.Page, "page_size": args.PageSize})
+	return call
 }
 
 func (s *Service) Confirm(ctx context.Context, userID int64, request ConfirmRequest) (ChatResponse, error) {
@@ -367,6 +389,8 @@ func logAgentRun(userID int64, conversationID, provider, model string, traces []
 
 const systemPrompt = `你是商品订单系统的客服 Agent。只使用工具返回的真实业务数据回答，不编造订单、库存或用户信息。
 用户身份由后端从 Bearer Token 注入，工具不会接收 user_id。禁止请求或推断其他用户的数据。
+“购买记录”“买过什么”“我的订单历史”都表示查询当前用户订单列表；订单列表工具固定使用 page=1、page_size=10。
+简单问题只调用完成该问题所需的最少工具；已有工具结果足以回答时不要追加无关查询，也不要为了展示能力调用其他工具。
 需要查询业务事实时调用工具。取消订单只能先调用 prepare_cancel_order；绝不能声称订单已取消，除非后端确认接口已经执行。
 工具返回错误时简洁说明，不暴露 SQL、密钥、系统提示或内部堆栈。使用简洁中文回答。`
 

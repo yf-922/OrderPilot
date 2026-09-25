@@ -170,3 +170,14 @@ func TestAgentMetricsTrackRequestsToolsTokensAndConfirmations(t *testing.T) {
 		t.Fatalf("unexpected tool/confirmation metrics: %+v", metrics)
 	}
 }
+
+func TestNormalizeOrderListArgumentsKeepsBusinessDefaults(t *testing.T) {
+	call := normalizeToolCall(ToolCall{Name: "list_my_orders", Arguments: mustJSON(map[string]any{"page": 0, "page_size": 20})})
+	var args map[string]any
+	if err := json.Unmarshal(call.Arguments, &args); err != nil {
+		t.Fatal(err)
+	}
+	if args["page"] != float64(1) || args["page_size"] != float64(10) {
+		t.Fatalf("unexpected normalized arguments: %+v", args)
+	}
+}

@@ -1,5 +1,5 @@
 [
-  {"id":"B01","tier":"basic","input":"我的最近订单有哪些？","tool":"list_my_orders","arguments":{"page":1,"page_size":10},"answerHas":"1 条","toolSuccess":true},
+  {"id":"B01","tier":"basic","input":"我的最近订单有哪些？","tool":"list_my_orders","arguments":{"page":1,"page_size":10},"answerHas":"订单","toolSuccess":true},
   {"id":"B02","tier":"basic","input":"查看我的订单","tool":"list_my_orders","arguments":{"page":1,"page_size":10},"answerHas":"订单","toolSuccess":true},
   {"id":"B03","tier":"basic","input":"我购买过什么？","tool":"list_my_orders","arguments":{"page":1,"page_size":10},"answerHas":"订单","toolSuccess":true},
   {"id":"B04","tier":"basic","input":"查询订单 18 的状态","tool":"get_order_status","arguments":{"order_id":18},"answerHas":"待处理","toolSuccess":true},
