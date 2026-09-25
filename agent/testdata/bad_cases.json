@@ -5,8 +5,9 @@
     "caseId": "B01",
     "failure": "模型在部分重复运行中将 list_my_orders 的 page_size 设为 20，而黄金集当前期望 10。",
     "category": "tool_arguments",
-    "status": "open",
-    "nextAction": "决定业务默认分页大小后收紧工具描述或允许 10/20 的业务等价断言；修改后回归 B01 五次。"
+    "status": "resolved",
+    "resolution": "固定订单列表工具分页参数为 page=1、page_size=10；Grok 4.5 回归 5/5 通过。",
+    "nextAction": "继续在全量评测中监控分页参数漂移。"
   },
   {
     "id": "BC-20260925-002",
@@ -14,7 +15,8 @@
     "caseId": "B03",
     "failure": "“我购买过什么”出现工具路径和输出不稳定，未稳定满足黄金集断言。",
     "category": "intent_and_stability",
-    "status": "open",
-    "nextAction": "已增加最少工具原则到系统提示；重新运行 B03 五次，分别统计意图正确率和轨迹正确率，不直接放宽结果断言。"
+    "status": "resolved",
+    "resolution": "增加最少工具原则并保留严格轨迹断言；Grok 4.5 回归 5/5 通过。",
+    "nextAction": "继续在全量评测中监控无关工具调用。"
   }
 ]
