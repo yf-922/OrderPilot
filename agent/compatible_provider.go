@@ -87,8 +87,7 @@ func (p *CompatibleProvider) Complete(ctx context.Context, input CompletionReque
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		responseBody, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return Completion{}, fmt.Errorf("AI provider returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(responseBody)))
+		return Completion{}, fmt.Errorf("AI provider returned HTTP %d", resp.StatusCode)
 	}
 	var output struct {
 		Choices []struct {

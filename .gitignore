@@ -1,4 +1,5 @@
 .idea/
+.env
 .codex-cache/
 .codex-gopath/
 .codex-telemetry/

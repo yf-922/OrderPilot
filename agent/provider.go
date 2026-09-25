@@ -29,7 +29,7 @@ func NewProviderFromEnv() Provider {
 		Name:    provider,
 		APIKey:  apiKey,
 		BaseURL: envOr("AI_BASE_URL", "https://api.x.ai/v1"),
-		Model:   envOr("AI_MODEL", "grok-4-fast-non-reasoning"),
+		Model:   envOr("AI_MODEL", "grok-4.6"),
 	})
 }
 

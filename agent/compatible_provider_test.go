@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -39,6 +40,19 @@ func TestCompatibleProviderToolCallContract(t *testing.T) {
 	}
 	if len(completion.Message.ToolCalls) != 1 || completion.Message.ToolCalls[0].Name != "get_order_status" || completion.Usage.TotalTokens != 14 {
 		t.Fatalf("unexpected completion: %+v", completion)
+	}
+}
+
+func TestCompatibleProviderDoesNotExposeUpstreamErrorBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"invalid key sk-sensitive-value"}`))
+	}))
+	defer server.Close()
+	provider := NewCompatibleProvider(CompatibleConfig{Name: "test", APIKey: "sk-sensitive-value", BaseURL: server.URL, Model: "test"})
+	_, err := provider.Complete(context.Background(), CompletionRequest{Messages: []Message{{Role: "user", Content: "hello"}}})
+	if err == nil || !strings.Contains(err.Error(), "HTTP 401") || strings.Contains(err.Error(), "sk-sensitive-value") {
+		t.Fatalf("upstream error was not safely redacted: %v", err)
 	}
 }
 

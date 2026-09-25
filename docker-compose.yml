@@ -42,7 +42,7 @@ services:
       XAI_API_KEY: ${XAI_API_KEY:-}
       GROK_API_KEY: ${GROK_API_KEY:-}
       AI_BASE_URL: ${AI_BASE_URL:-https://api.x.ai/v1}
-      AI_MODEL: ${AI_MODEL:-grok-4-fast-non-reasoning}
+      AI_MODEL: ${AI_MODEL:-grok-4.6}
     ports: ["8080:8080"]
     depends_on:
       mysql: { condition: service_healthy }
