@@ -69,7 +69,11 @@ func summarizeLocalTool(name, content string) string {
 	switch name {
 	case "search_products":
 		items, _ := result["items"].([]any)
-		return fmt.Sprintf("已查询到 %d 个符合条件的商品，详细库存见右侧工具调用结果。", len(items))
+		count, ok := result["count"].(float64)
+		if !ok {
+			count = float64(len(items))
+		}
+		return fmt.Sprintf("已查询到 %d 个符合条件的商品，详细库存见右侧工具调用结果。", int(count))
 	case "list_my_orders":
 		return fmt.Sprintf("已查询你的订单，共 %v 条，详细结果见右侧。", result["total"])
 	case "get_order_status":

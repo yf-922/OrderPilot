@@ -20,6 +20,7 @@ import (
 const (
 	maxAgentTurns       = 5
 	maxConversationSize = 20
+	maxContextBytes     = 32 * 1024
 	confirmationTTL     = 5 * time.Minute
 )
 
@@ -97,8 +98,10 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 	traces := make([]ToolTrace, 0)
 	usage := Usage{}
 	var confirmation *Confirmation
+	seenCalls := make(map[string]bool)
+	var handoff *Handoff
 	for turn := 0; turn < maxAgentTurns; turn++ {
-		completion, completeErr := s.provider.Complete(ctx, CompletionRequest{Messages: messages, Tools: toolDefinitions()})
+		completion, completeErr := s.provider.Complete(ctx, CompletionRequest{Messages: boundedContext(messages), Tools: toolDefinitions()})
 		if completeErr != nil {
 			s.recordRequestEnd(false, usage.TotalTokens, time.Since(startedAt))
 			logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, false, completeErr.Error())
@@ -120,24 +123,161 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 			s.saveConversation(userID, conversationID, messages[1:])
 			s.recordRequestEnd(true, usage.TotalTokens, time.Since(startedAt))
 			logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, true, "")
-			return ChatResponse{ConversationID: conversationID, Message: answer, Provider: s.provider.Name(), Model: s.provider.Model(), ToolCalls: traces, Confirmation: confirmation, Usage: usage}, nil
+			return ChatResponse{ConversationID: conversationID, Message: answer, Provider: s.provider.Name(), Model: s.provider.Model(), ToolCalls: traces, Confirmation: confirmation, Usage: usage, Handoff: handoff}, nil
 		}
 		for _, call := range completion.Message.ToolCalls {
 			call = normalizeToolCall(call)
+			fingerprint := call.Name + ":" + string(call.Arguments)
+			if seenCalls[fingerprint] {
+				handoff = newHandoff("repeated_tool_call", request.Message, traces, "模型重复调用相同工具")
+				return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt), nil
+			}
+			seenCalls[fingerprint] = true
 			started := s.now()
 			result, action, toolErr := s.executeTool(ctx, userID, conversationID, call)
-			trace := ToolTrace{Name: call.Name, Arguments: call.Arguments, Result: result, DurationMS: s.now().Sub(started).Milliseconds(), Success: toolErr == nil}
+			attempts := 1
+			if errors.Is(toolErr, context.DeadlineExceeded) && isReadOnlyTool(call.Name) && ctx.Err() == nil {
+				result, action, toolErr = s.executeTool(ctx, userID, conversationID, call)
+				attempts++
+			}
+			failureClass := classifyToolFailure(call.Name, result, toolErr)
+			trace := ToolTrace{Name: call.Name, Arguments: call.Arguments, Result: result, DurationMS: s.now().Sub(started).Milliseconds(), Success: toolErr == nil, FailureClass: failureClass, Attempts: attempts}
 			traces = append(traces, trace)
 			s.recordTool(trace.Success)
 			if action != nil {
 				confirmation = action
 			}
-			messages = append(messages, Message{Role: "tool", Name: call.Name, ToolCallID: call.ID, Content: string(result)})
+			messages = append(messages, Message{Role: "tool", Name: call.Name, ToolCallID: call.ID, Content: compactToolResult(call.Name, result)})
+			if failureClass == "transient" {
+				handoff = newHandoff("tool_unavailable", request.Message, traces, "业务查询连续超时")
+			}
 		}
 	}
-	logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, false, "maximum tool turns exceeded")
+	handoff = newHandoff("max_turns", request.Message, traces, "达到模型推理轮次上限")
+	return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt), nil
+}
+
+func boundedContext(messages []Message) []Message {
+	if len(messages) < 2 {
+		return messages
+	}
+	start := len(messages) - 1
+	for start > 1 && messages[start].Role != "user" {
+		start--
+	}
+	used := messageBytes(messages[0])
+	for _, message := range messages[start:] {
+		used += messageBytes(message)
+	}
+	for start > 1 {
+		previous := start - 1
+		for previous > 1 && messages[previous].Role != "user" {
+			previous--
+		}
+		groupBytes := 0
+		for _, message := range messages[previous:start] {
+			groupBytes += messageBytes(message)
+		}
+		if used+groupBytes > maxContextBytes || len(messages)-previous > maxConversationSize {
+			break
+		}
+		used += groupBytes
+		start = previous
+	}
+	result := make([]Message, 0, 1+len(messages)-start)
+	result = append(result, messages[0])
+	return append(result, messages[start:]...)
+}
+
+func messageBytes(message Message) int {
+	size := len(message.Role) + len(message.Name) + len(message.Content) + 32
+	for _, call := range message.ToolCalls {
+		size += len(call.Name) + len(call.Arguments) + 32
+	}
+	return size
+}
+
+func compactToolResult(name string, raw json.RawMessage) string {
+	if name != "search_products" {
+		return string(raw)
+	}
+	var payload struct {
+		OK    bool `json:"ok"`
+		Items []struct {
+			ID          int64  `json:"id"`
+			ProductName string `json:"productName"`
+			ProductNum  int64  `json:"productNum"`
+		} `json:"items"`
+		Count             int    `json:"count"`
+		LowStockThreshold int64  `json:"lowStockThreshold"`
+		Error             string `json:"error,omitempty"`
+	}
+	if json.Unmarshal(raw, &payload) != nil {
+		return string(raw)
+	}
+	if len(payload.Items) > 20 {
+		payload.Items = payload.Items[:20]
+	}
+	for i := range payload.Items {
+		productName := []rune(payload.Items[i].ProductName)
+		if len(productName) > 100 {
+			payload.Items[i].ProductName = string(productName[:100])
+		}
+	}
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return string(raw)
+	}
+	return string(encoded)
+}
+
+func isReadOnlyTool(name string) bool {
+	return name == "search_products" || name == "list_my_orders" || name == "get_order_status"
+}
+
+func classifyToolFailure(name string, result json.RawMessage, err error) string {
+	if err == nil {
+		return ""
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "transient"
+	}
+	if name != "search_products" && name != "list_my_orders" && name != "get_order_status" && name != "prepare_cancel_order" {
+		return "unsupported"
+	}
+	var body struct {
+		Error string `json:"error"`
+	}
+	_ = json.Unmarshal(result, &body)
+	switch body.Error {
+	case "invalid arguments", "order_id must be a positive integer":
+		return "invalid_arguments"
+	case "order not found", "only pending orders can be cancelled":
+		return "business_rule"
+	default:
+		return "service_error"
+	}
+}
+
+func newHandoff(reason, goal string, traces []ToolTrace, failure string) *Handoff {
+	tools := make([]string, 0, len(traces))
+	for _, trace := range traces {
+		tools = append(tools, trace.Name)
+	}
+	return &Handoff{Reason: reason, Goal: goal, CompletedTools: tools, Failure: failure}
+}
+
+func (s *Service) finishHandoff(userID int64, conversationID string, messages []Message, traces []ToolTrace, usage Usage, confirmation *Confirmation, handoff *Handoff, startedAt time.Time) ChatResponse {
+	if confirmation != nil {
+		s.mu.Lock()
+		delete(s.pending, confirmation.Token)
+		s.mu.Unlock()
+	}
+	answer := "这次请求未能可靠完成，建议联系人工客服继续处理；我没有执行订单变更。"
+	s.saveConversation(userID, conversationID, append(messages[1:], Message{Role: "assistant", Content: answer}))
 	s.recordRequestEnd(false, usage.TotalTokens, time.Since(startedAt))
-	return ChatResponse{}, fmt.Errorf("agent exceeded maximum tool turns")
+	logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, false, handoff.Reason)
+	return ChatResponse{ConversationID: conversationID, Message: answer, Provider: s.provider.Name(), Model: s.provider.Model(), ToolCalls: traces, Usage: usage, Handoff: handoff}
 }
 
 func normalizeToolCall(call ToolCall) ToolCall {
@@ -334,9 +474,7 @@ func (s *Service) cleanupLocked() {
 }
 
 func (s *Service) saveConversation(userID int64, id string, messages []Message) {
-	if len(messages) > maxConversationSize {
-		messages = messages[len(messages)-maxConversationSize:]
-	}
+	messages = boundedContext(append([]Message{{Role: "system", Content: systemPrompt}}, messages...))[1:]
 	s.mu.Lock()
 	s.chats[id] = &conversation{UserID: userID, Messages: append([]Message(nil), messages...), Updated: s.now()}
 	s.mu.Unlock()

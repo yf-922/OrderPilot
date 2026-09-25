@@ -39,11 +39,20 @@ type Completion struct {
 }
 
 type ToolTrace struct {
-	Name       string          `json:"name"`
-	Arguments  json.RawMessage `json:"arguments"`
-	Result     json.RawMessage `json:"result"`
-	DurationMS int64           `json:"durationMs"`
-	Success    bool            `json:"success"`
+	Name         string          `json:"name"`
+	Arguments    json.RawMessage `json:"arguments"`
+	Result       json.RawMessage `json:"result"`
+	DurationMS   int64           `json:"durationMs"`
+	Success      bool            `json:"success"`
+	FailureClass string          `json:"failureClass,omitempty"`
+	Attempts     int             `json:"attempts,omitempty"`
+}
+
+type Handoff struct {
+	Reason         string   `json:"reason"`
+	Goal           string   `json:"goal"`
+	CompletedTools []string `json:"completedTools"`
+	Failure        string   `json:"failure"`
 }
 
 type Confirmation struct {
@@ -66,6 +75,7 @@ type ChatResponse struct {
 	ToolCalls      []ToolTrace   `json:"toolCalls"`
 	Confirmation   *Confirmation `json:"confirmation,omitempty"`
 	Usage          Usage         `json:"usage,omitempty"`
+	Handoff        *Handoff      `json:"handoff,omitempty"`
 }
 
 type ConfirmRequest struct {
