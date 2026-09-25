@@ -25,6 +25,16 @@ func (a *AgentController) GetStatus() {
 	_ = a.Ctx.JSON(common.NewSuccessResult("ok", a.AgentService.Status()))
 }
 
+func (a *AgentController) GetMetrics() {
+	metrics, ok := a.AgentService.(interface{ Metrics() agent.Metrics })
+	if !ok {
+		a.Ctx.StatusCode(iris.StatusNotImplemented)
+		_ = a.Ctx.JSON(common.NewFailResult("metrics unavailable"))
+		return
+	}
+	_ = a.Ctx.JSON(common.NewSuccessResult("ok", metrics.Metrics()))
+}
+
 func (a *AgentController) PostChat() {
 	var request agent.ChatRequest
 	if err := a.Ctx.ReadJSON(&request); err != nil {

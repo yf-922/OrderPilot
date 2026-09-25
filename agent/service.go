@@ -50,6 +50,7 @@ type Service struct {
 	mu       sync.Mutex
 	chats    map[string]*conversation
 	pending  map[string]pendingAction
+	metrics  Metrics
 }
 
 type ChatService interface {
@@ -71,13 +72,24 @@ func (s *Service) Status() Status {
 	return Status{Provider: s.provider.Name(), Model: s.provider.Model(), Mode: mode}
 }
 
+func (s *Service) Metrics() Metrics {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	metrics := s.metrics
+	return metrics
+}
+
 func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (ChatResponse, error) {
+	startedAt := time.Now()
+	s.recordRequestStart()
 	request.Message = strings.TrimSpace(request.Message)
 	if len(request.Message) == 0 || len(request.Message) > 2000 {
+		s.recordRequestEnd(false, 0, time.Since(startedAt))
 		return ChatResponse{}, ErrInvalidMessage
 	}
 	conversationID, history, err := s.loadConversation(userID, request.ConversationID)
 	if err != nil {
+		s.recordRequestEnd(false, 0, time.Since(startedAt))
 		return ChatResponse{}, err
 	}
 	messages := append([]Message{{Role: "system", Content: systemPrompt}}, history...)
@@ -88,6 +100,7 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 	for turn := 0; turn < maxAgentTurns; turn++ {
 		completion, completeErr := s.provider.Complete(ctx, CompletionRequest{Messages: messages, Tools: toolDefinitions()})
 		if completeErr != nil {
+			s.recordRequestEnd(false, usage.TotalTokens, time.Since(startedAt))
 			logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, false, completeErr.Error())
 			return ChatResponse{}, completeErr
 		}
@@ -101,6 +114,7 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 				answer = "暂时无法生成回答，请换一种方式描述问题。"
 			}
 			s.saveConversation(userID, conversationID, messages[1:])
+			s.recordRequestEnd(true, usage.TotalTokens, time.Since(startedAt))
 			logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, true, "")
 			return ChatResponse{ConversationID: conversationID, Message: answer, Provider: s.provider.Name(), Model: s.provider.Model(), ToolCalls: traces, Confirmation: confirmation, Usage: usage}, nil
 		}
@@ -109,6 +123,7 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 			result, action, toolErr := s.executeTool(ctx, userID, conversationID, call)
 			trace := ToolTrace{Name: call.Name, Arguments: call.Arguments, Result: result, DurationMS: s.now().Sub(started).Milliseconds(), Success: toolErr == nil}
 			traces = append(traces, trace)
+			s.recordTool(trace.Success)
 			if action != nil {
 				confirmation = action
 			}
@@ -116,6 +131,7 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 		}
 	}
 	logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, false, "maximum tool turns exceeded")
+	s.recordRequestEnd(false, usage.TotalTokens, time.Since(startedAt))
 	return ChatResponse{}, fmt.Errorf("agent exceeded maximum tool turns")
 }
 
@@ -132,11 +148,43 @@ func (s *Service) Confirm(ctx context.Context, userID int64, request ConfirmRequ
 	if err := s.orders.CancelOrder(ctx, action.OrderID, userID); err != nil {
 		return ChatResponse{}, err
 	}
+	s.mu.Lock()
+	s.metrics.Confirmations++
+	s.mu.Unlock()
 	message := fmt.Sprintf("订单 %d 已取消，库存已经恢复。", action.OrderID)
 	s.appendConversation(userID, action.ConversationID, Message{Role: "assistant", Content: message})
 	trace := ToolTrace{Name: "cancel_my_pending_order", Arguments: mustJSON(map[string]any{"order_id": action.OrderID}), Result: mustJSON(map[string]any{"ok": true, "orderId": action.OrderID}), Success: true}
 	logAgentRun(userID, action.ConversationID, s.provider.Name(), s.provider.Model(), []ToolTrace{trace}, Usage{}, true, "")
 	return ChatResponse{ConversationID: action.ConversationID, Message: message, Provider: s.provider.Name(), Model: s.provider.Model(), ToolCalls: []ToolTrace{trace}}, nil
+}
+
+func (s *Service) recordRequestStart() {
+	s.mu.Lock()
+	s.metrics.Requests++
+	s.mu.Unlock()
+}
+
+func (s *Service) recordRequestEnd(success bool, tokens int, latency time.Duration) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if success {
+		s.metrics.SuccessfulRequests++
+	} else {
+		s.metrics.FailedRequests++
+	}
+	s.metrics.TotalTokens += int64(tokens)
+	if s.metrics.Requests > 0 {
+		s.metrics.AverageLatencyMS = ((s.metrics.AverageLatencyMS * float64(s.metrics.Requests-1)) + float64(latency.Milliseconds())) / float64(s.metrics.Requests)
+	}
+}
+
+func (s *Service) recordTool(success bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.metrics.ToolCalls++
+	if !success {
+		s.metrics.ToolFailures++
+	}
 }
 
 func (s *Service) Reset(userID int64, conversationID string) {
@@ -181,6 +229,12 @@ func (s *Service) executeTool(ctx context.Context, userID int64, conversationID 
 		}
 		if err := json.Unmarshal(call.Arguments, &args); err != nil {
 			return result(map[string]any{"ok": false, "error": "invalid arguments"}), nil, err
+		}
+		if args.Page < 1 {
+			args.Page = 1
+		}
+		if args.PageSize < 1 || args.PageSize > 10 {
+			args.PageSize = 10
 		}
 		orders, total, err := s.orders.ListOrdersForUser(ctx, userID, args.Page, args.PageSize)
 		if err != nil {
@@ -322,7 +376,7 @@ func toolDefinitions() []ToolDefinition {
 	}
 	return []ToolDefinition{
 		{Name: "search_products", Description: "按关键词查询商品和真实库存；low_stock_only 为 true 时仅返回库存少于 10 的商品。", Parameters: object(map[string]any{"keyword": map[string]any{"type": "string"}, "low_stock_only": map[string]any{"type": "boolean"}}, "keyword", "low_stock_only")},
-		{Name: "list_my_orders", Description: "分页查询当前已认证用户自己的订单。不能查询其他用户。", Parameters: object(map[string]any{"page": map[string]any{"type": "integer", "minimum": 1}, "page_size": map[string]any{"type": "integer", "minimum": 1, "maximum": 20}}, "page", "page_size")},
+		{Name: "list_my_orders", Description: "分页查询当前已认证用户自己的订单。不能查询其他用户。page 从 1 开始，page_size 固定使用 10。", Parameters: object(map[string]any{"page": map[string]any{"type": "integer", "minimum": 1}, "page_size": map[string]any{"type": "integer", "const": 10}}, "page", "page_size")},
 		{Name: "get_order_status", Description: "查询当前用户拥有的一个订单的状态及是否可以取消。", Parameters: object(map[string]any{"order_id": map[string]any{"type": "integer", "minimum": 1}}, "order_id")},
 		{Name: "prepare_cancel_order", Description: "检查当前用户的待处理订单能否取消，并生成需要用户明确点击确认的操作。此工具本身不会取消订单。", Parameters: object(map[string]any{"order_id": map[string]any{"type": "integer", "minimum": 1}}, "order_id")},
 	}

@@ -51,6 +51,21 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    function refreshMetrics() {
+        if (!lib.getToken()) return;
+        lib.requestJSON("/agent/metrics").then(function (result) {
+            if (!result.success || !result.data) return;
+            var data = result.data;
+            var total = Number(data.requests || 0);
+            var success = Number(data.successfulRequests || 0);
+            document.getElementById("agent-success-rate").textContent = total ? Math.round(success * 1000 / total) / 10 + "%" : "0%";
+            document.getElementById("agent-tool-failures").textContent = String(data.toolFailures || 0);
+            document.getElementById("agent-total-tokens").textContent = String(data.totalTokens || 0);
+            document.getElementById("agent-average-latency").textContent = Math.round(Number(data.averageLatencyMs || 0)) + " ms";
+            document.getElementById("agent-confirmations").textContent = String(data.confirmations || 0);
+        });
+    }
+
     function addConfirmation(confirmation) {
         if (!confirmation) return;
         var box = document.createElement("div");
@@ -72,6 +87,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 box.remove();
                 addMessage("assistant", result.data.message);
                 showTraces(result.data.toolCalls, result.data.usage);
+                refreshMetrics();
             }).catch(function (error) {
                 button.disabled = false;
                 text.textContent = error.message;
@@ -102,6 +118,7 @@ document.addEventListener("DOMContentLoaded", function () {
             addMessage("assistant", result.data.message);
             showTraces(result.data.toolCalls, result.data.usage);
             addConfirmation(result.data.confirmation);
+            refreshMetrics();
         }).catch(function (error) {
             loading.remove();
             addMessage("assistant", error.message);
@@ -142,4 +159,5 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("agent-mode").textContent = result.data.mode === "live" ? "Grok 在线" : "本地演示";
         document.getElementById("agent-model").textContent = result.data.model;
     });
+    refreshMetrics();
 });

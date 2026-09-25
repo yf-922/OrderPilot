@@ -78,3 +78,14 @@ type Status struct {
 	Model    string `json:"model"`
 	Mode     string `json:"mode"`
 }
+
+type Metrics struct {
+	Requests           int64   `json:"requests"`
+	SuccessfulRequests int64   `json:"successfulRequests"`
+	FailedRequests     int64   `json:"failedRequests"`
+	ToolCalls          int64   `json:"toolCalls"`
+	ToolFailures       int64   `json:"toolFailures"`
+	Confirmations      int64   `json:"confirmations"`
+	TotalTokens        int64   `json:"totalTokens"`
+	AverageLatencyMS   float64 `json:"averageLatencyMs"`
+}

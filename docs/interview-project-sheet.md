@@ -43,3 +43,4 @@ Agent 面试时可展示 `agent/testdata/golden.json` 与 `go test ./agent -run 
 - 当前鉴权为 HMAC Bearer Token，生产环境应接入 OIDC/JWT、密钥轮换和集中式密钥管理。
 - 当前迁移由应用启动时兼容补齐；更大规模部署可替换为 Goose/Atlas 等版本化迁移流水线。
 - 当前指标以请求日志和健康检查为主，下一步可接 Prometheus/OpenTelemetry、限流和连接池指标。
+- Agent 页面现在提供累计运行面板，通过鉴权的 `/agent/metrics` 展示请求成功率、工具失败、Token、平均延迟和确认操作数；进程重启后指标清零。

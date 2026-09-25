@@ -145,3 +145,28 @@ func TestAgentFiltersLowStockProducts(t *testing.T) {
 		t.Fatalf("unexpected low stock result: %+v", result.Items)
 	}
 }
+
+func TestAgentMetricsTrackRequestsToolsTokensAndConfirmations(t *testing.T) {
+	orders := &orderServiceMock{order: &datamodels.Order{ID: 8, UserID: 42, OrderStatus: datamodels.OrderWait}}
+	svc := NewService(NewLocalProvider(), orders, &productServiceMock{})
+	if _, err := svc.Chat(context.Background(), 42, ChatRequest{Message: "我的订单"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Chat(context.Background(), 42, ChatRequest{Message: ""}); !errors.Is(err, ErrInvalidMessage) {
+		t.Fatal(err)
+	}
+	response, err := svc.Chat(context.Background(), 42, ChatRequest{Message: "取消订单 8"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Confirm(context.Background(), 42, ConfirmRequest{ConversationID: response.ConversationID, Token: response.Confirmation.Token}); err != nil {
+		t.Fatal(err)
+	}
+	metrics := svc.Metrics()
+	if metrics.Requests != 3 || metrics.SuccessfulRequests != 2 || metrics.FailedRequests != 1 {
+		t.Fatalf("unexpected request metrics: %+v", metrics)
+	}
+	if metrics.ToolCalls != 2 || metrics.Confirmations != 1 {
+		t.Fatalf("unexpected tool/confirmation metrics: %+v", metrics)
+	}
+}
