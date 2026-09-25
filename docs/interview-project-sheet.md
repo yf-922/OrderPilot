@@ -14,7 +14,7 @@
 
 ## 简历项目展示终稿
 
-**GoWorks Product｜电商订单后端与订单客服 Agent**  
+**GoWorks Product｜电商订单后端与订单客服 Agent**
 **技术栈：** Go、Iris、MySQL、Redis、Docker Compose、Grok 4.5、Function Calling
 
 - 面向商品查询、订单查询和取消订单场景，在 Go + Iris 电商后端中实现订单客服 Agent；通过 OpenAI-compatible Chat Completions 接入 Grok 4.5，模型负责意图理解和工具选择，业务规则与订单副作用由 Go Service 控制。
