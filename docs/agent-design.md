@@ -44,7 +44,23 @@ Agent 将大模型接入已有商品订单业务，而不是让模型直接访�
 
 每次执行输出结构化 `agent_run` 日志，包含用户、会话、Provider、模型、工具数量、Token 用量和成功状态。HTTP 返回工具名称、参数、结果与耗时，方便面试时展示可解释执行轨迹。
 
-`agent/eval_test.go` 提供意图路由回归集，覆盖订单列表、状态查询、取消确认、商品查询、低库存和提示注入。Service 测试覆盖权限隔离、确认前无副作用、跨用户确认和令牌重放。
+`agent/testdata/golden.json` 是固定的 30 题 v1 黄金集：15 条基础题、9 条表达变体、6 条对抗/异常题。每条保留输入、预期工具和参数、最终回答关键词、工具成功与否、是否需人工确认。变更题集时应升级版本号，不能为了提高分数临时改标注。
+
+`TestAgentGoldenEvaluation` 每题重复 5 次，用相同 mock 业务数据重新建立会话，对工具轨迹、参数、身份绑定、结果、确认状态及确认前无副作用自动判分。报告逐次保留通过状态、失败原因、步骤、Token 和耗时，并按难度汇总。CI 强制运行本地确定性回归，失败即阻断。Service 测试另外覆盖跨用户确认和令牌重放。
+
+在仓库根目录运行：
+
+```powershell
+go test ./agent -run '^TestAgentGoldenEvaluation$' -count=1 -v
+$env:AGENT_EVAL_REPORT_PATH = 'agent-eval-local.json'
+go test ./agent -run '^TestAgentGoldenEvaluation$' -count=1 -v
+```
+
+配置服务端 Grok Key 后，显式设置 `AGENT_EVAL_LIVE=1`，用**同一题集**运行真实模型评测。它会实际调用付费 API（最多 150 个任务，每个任务可能多轮模型调用）；请先确认预算，并将报告路径设置在仓库外，避免意外提交模型输出。不要将本地 Provider 的 0 Token/极低延迟当作真实模型成本。在线模型答案具有开放性，关键词断言属于保守自动筛查，失败案例应人工复核，再按预先定义的评分点改进标注。当前题集以单工具任务为主，尚未覆盖复杂多工具编排、工具超时注入或线上用户分布，不能据此声称生产效果。
+
+在线冒烟可另外设置 `AGENT_EVAL_CASE=B04` 和 `AGENT_EVAL_REPETITIONS=1`，只执行一题一次；不设置时默认全量 30 题各 5 次。直接运行 `go test` 不会自动读取 `.env`，需要先把 `GROK_API_KEY`、`AI_BASE_URL`、`AI_MODEL` 导入当前终端环境。Docker Compose 则会自动读取根目录 `.env`。第三方兼容网关的模型名和支持的 API 协议应以实际响应验证；本项目当前使用 Chat Completions + Function Calling。
+
+每次在线评测失败不直接改黄金答案，而是先记录到 `agent/testdata/bad_cases.json`，包括来源、失败类别、是否已修复和下一步动作；修复后再把案例固化进黄金集。这样能区分模型随机性、标注问题和产品策略问题。
 
 ## 面试讲解顺序
 

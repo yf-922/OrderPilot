@@ -1,0 +1,20 @@
+[
+  {
+    "id": "BC-20260925-001",
+    "source": "grok-4.5-v2",
+    "caseId": "B01",
+    "failure": "模型在部分重复运行中将 list_my_orders 的 page_size 设为 20，而黄金集当前期望 10。",
+    "category": "tool_arguments",
+    "status": "open",
+    "nextAction": "决定业务默认分页大小后收紧工具描述或允许 10/20 的业务等价断言；修改后回归 B01 五次。"
+  },
+  {
+    "id": "BC-20260925-002",
+    "source": "grok-4.5-v2",
+    "caseId": "B03",
+    "failure": "“我购买过什么”出现工具路径和输出不稳定，未稳定满足黄金集断言。",
+    "category": "intent_and_stability",
+    "status": "open",
+    "nextAction": "补充订单历史语义示例，并分别统计意图正确率和轨迹正确率，不直接放宽结果断言。"
+  }
+]

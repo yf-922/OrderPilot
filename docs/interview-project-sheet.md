@@ -10,6 +10,7 @@
 - 为订单创建引入 `Idempotency-Key`，将请求参数与用户绑定；重复请求返回同一订单，不同参数复用同一 Key 返回 `409 Conflict`，避免重试造成重复扣库存。
 - 使用 Redis Cache-Aside 缓存商品列表，缓存不可用时自动回源 MySQL；补充 Request ID、结构化访问日志、健康/就绪探针、请求体上限和安全响应头。
 - 建立从单元测试、竞态检测、真实 MySQL 并发测试到 HTTP 冒烟的质量门禁，并提供 OpenAPI 契约、Docker Compose 和 GitHub Actions。
+- 为订单客服 Agent 建立 30 题固定离线评测集，按基础/表达变体/异常对抗分层，每题重复 5 次；自动核验工具选择、参数、身份绑定、人工确认与回答，输出逐题失败原因、轨迹步数、Token 和延迟。此项数据来自本地确定性 Provider，不代表 Grok 模型准确率。
 
 ## 当前可验证证据
 
@@ -26,6 +27,8 @@
 | Docker MySQL / Redis / API 健康检查 | 通过 |
 
 以上是本地验证结果，不等同于线上吞吐或可用性指标。若简历需要写 P95、QPS 或错误率，应额外运行压测并记录命令、并发数、数据规模和环境。
+
+Agent 面试时可展示 `agent/testdata/golden.json` 与 `go test ./agent -run '^TestAgentGoldenEvaluation$' -count=1 -v` 的逐题报告。解释“固定题集 -> 预定义断言 -> 五次重复 -> bad case 回流 -> 同题集对比”的闭环。没有真实 Grok 报告前，不写模型准确率提升或消融百分比；本地规则 Provider 只是回归基线。
 
 ## 面试演示顺序
 

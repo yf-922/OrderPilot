@@ -32,6 +32,12 @@ jobs:
       - name: Run Go tests
         run: go test ./...
 
+      - name: Run fixed Agent golden set (5 repetitions)
+        run: go test ./agent -run '^TestAgentGoldenEvaluation$' -count=1 -v
+
+      - name: Run scripted Agent trajectory and fault set (5 repetitions)
+        run: go test ./agent -run '^TestAgentTrajectoryEvaluation$' -count=1
+
       - name: Run race detector
         run: go test -race ./...
 
@@ -71,6 +77,9 @@ jobs:
 
       - name: Check API smoke test syntax
         run: python -m py_compile tests/api_smoke_test.py
+
+      - name: Test Agent report comparison
+        run: python -m unittest discover -s tests -p test_compare_agent_eval.py
 
       - name: Start integration environment
         run: docker compose up -d --build --wait
