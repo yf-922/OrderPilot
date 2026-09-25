@@ -4,13 +4,20 @@
 
 基于 Go + Iris 的商品与订单后端：以 Controller / Service / Repository 分层承载用户、商品和订单业务，使用 MySQL 事务与行级锁保证库存一致性，Redis 通过 Cache-Aside 加速热点商品查询，并用幂等键处理客户端重试。
 
-## 可直接放进简历的项目描述
+## 可直接放进简历的 AI 应用岗版本
 
-- 设计并实现 Go + Iris 分层后端，覆盖用户认证、商品分页搜索、订单状态机和库存回滚；通过 MySQL 事务内 `SELECT ... FOR UPDATE` 保证并发下单不会超卖。
-- 为订单创建引入 `Idempotency-Key`，将请求参数与用户绑定；重复请求返回同一订单，不同参数复用同一 Key 返回 `409 Conflict`，避免重试造成重复扣库存。
-- 使用 Redis Cache-Aside 缓存商品列表，缓存不可用时自动回源 MySQL；补充 Request ID、结构化访问日志、健康/就绪探针、请求体上限和安全响应头。
-- 建立从单元测试、竞态检测、真实 MySQL 并发测试到 HTTP 冒烟的质量门禁，并提供 OpenAPI 契约、Docker Compose 和 GitHub Actions。
-- 为订单客服 Agent 建立 30 题固定黄金集和 30 题挑战集：覆盖正常路径、口语、错别字、歧义、多意图、越权诱导、不支持请求和边界参数；黄金集每题重复 5 次，挑战集按类别分层抽样。自动核验工具选择、参数、身份绑定、人工确认、失败兜底与回答，输出逐题失败原因、轨迹步数、Token 和延迟。挑战集允许暴露失败，不把本地基线结果冒充 Grok 准确率。
+- 基于 Go + Iris 在商品/订单后端内实现订单客服 Agent；通过 OpenAI-compatible Chat Completions + Function Calling 接入 **Grok 4.5**（配置网关，非声称直连 xAI），模型只负责意图理解和工具选择，业务副作用仍由 Go Service 执行。
+- 实现最多 5 轮的多轮工具调用循环：`tool` 结果回传模型后再生成回答；会话按用户隔离，进程内保留最近 20 条消息，1 小时未更新清理，明确区分“有状态多轮 Agent”和完整 ReAct 框架。
+- 设计 4 个严格 JSON Schema 工具（商品搜索、我的订单、订单状态、取消预检查），`additionalProperties=false`、参数和订单归属在工具层二次校验；一次响应中的多个工具调用按顺序执行，当前关闭并行和流式 Function Calling。
+- 对取消订单采用 Human-in-the-loop：模型只能生成绑定用户/会话的 5 分钟单次确认令牌，确认接口再次校验身份、会话、过期时间和订单状态；身份从 Bearer 登录态注入，提示注入和越权不能绕过工具层授权，工具失败会覆盖模型“成功”表述并返回脱敏兜底。
+- 建立可回放评测闭环：30 条黄金题每题重复 5 次；30 条 challenge-v3 按类别固定 seed 分层抽样。已验证 Grok 4.5 旧版 challenge-v2 小样本 `6/10` 自动通过、`21,663` Token 后触发 `20,000` Token 软上限；该结果仅代表旧评分版本小样本，不冒充全量准确率。报告保留工具轨迹、参数、确认状态、Token、延迟和失败原因。
+
+## 可直接放进简历的后端岗版本
+
+- 使用 Go + Iris 完成用户、商品、订单分层后端，覆盖认证、分页搜索、订单状态机和库存回滚；MySQL 事务内 `SELECT ... FOR UPDATE` 保证并发下单不超卖。
+- 订单创建支持与用户、请求参数绑定的 `Idempotency-Key`；同 Key 重试返回原订单，参数冲突返回 `409 Conflict`，避免网络重试重复扣库存。
+- Redis Cache-Aside 加速热点商品查询，缓存不可用自动回源 MySQL；加入 Request ID、结构化日志、健康/就绪探针、请求体上限和安全响应头。
+- 用单元测试、`-race`、真实 MySQL 并发测试、HTTP 冒烟和 chaos case 建立质量门禁；提供 OpenAPI、Docker Compose、GitHub Actions，并接入订单客服 Agent 作为业务应用层。
 
 ## 当前可验证证据
 
