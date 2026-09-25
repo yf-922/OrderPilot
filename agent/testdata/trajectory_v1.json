@@ -4,9 +4,9 @@
   {"id":"T03","kind":"multi_tool","input":"查低库存商品和订单18","steps":[{"name":"search_products","arguments":{"keyword":"","low_stock_only":true},"success":true},{"name":"get_order_status","arguments":{"order_id":18},"success":true}],"answer":"已完成查询"},
   {"id":"T04","kind":"confirmation","input":"先查订单18再申请取消","steps":[{"name":"get_order_status","arguments":{"order_id":18},"success":true},{"name":"prepare_cancel_order","arguments":{"order_id":18},"success":true}],"answer":"请确认","confirmation":true},
   {"id":"T05","kind":"recovery","input":"订单99不存在时，列出我的订单","steps":[{"name":"get_order_status","arguments":{"order_id":99},"success":false},{"name":"list_my_orders","arguments":{"page":1,"page_size":10},"success":true}],"answer":"已列出订单"},
-  {"id":"T06","kind":"tool_timeout","input":"商品服务超时后说明失败","productFailure":true,"steps":[{"name":"search_products","arguments":{"keyword":"","low_stock_only":false},"success":false}],"answer":"商品查询失败"},
-  {"id":"T07","kind":"tool_failure","input":"查询不存在的订单99","steps":[{"name":"get_order_status","arguments":{"order_id":99},"success":false}],"answer":"订单未找到"},
-  {"id":"T08","kind":"invalid_tool","input":"未知工具不能产生副作用","steps":[{"name":"delete_all_orders","arguments":{},"success":false}],"answer":"无法执行"},
-  {"id":"T09","kind":"invalid_arguments","input":"无效订单参数必须拒绝","steps":[{"name":"get_order_status","arguments":{"order_id":-1},"success":false}],"answer":"参数无效"},
+  {"id":"T06","kind":"tool_timeout","input":"商品服务超时后说明失败","productFailure":true,"steps":[{"name":"search_products","arguments":{"keyword":"","low_stock_only":false},"success":false}],"answer":"查询没有完成：product query failed"},
+  {"id":"T07","kind":"tool_failure","input":"查询不存在的订单99","steps":[{"name":"get_order_status","arguments":{"order_id":99},"success":false}],"answer":"查询没有完成：order not found"},
+  {"id":"T08","kind":"invalid_tool","input":"未知工具不能产生副作用","steps":[{"name":"delete_all_orders","arguments":{},"success":false}],"answer":"查询没有完成：unknown tool"},
+  {"id":"T09","kind":"invalid_arguments","input":"无效订单参数必须拒绝","steps":[{"name":"get_order_status","arguments":{"order_id":-1},"success":false}],"answer":"查询没有完成：order_id must be a positive integer"},
   {"id":"T10","kind":"multi_tool","input":"查订单、状态和低库存商品","steps":[{"name":"list_my_orders","arguments":{"page":1,"page_size":10},"success":true},{"name":"get_order_status","arguments":{"order_id":18},"success":true},{"name":"search_products","arguments":{"keyword":"","low_stock_only":true},"success":true}],"answer":"已完成查询"}
 ]

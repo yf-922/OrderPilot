@@ -113,6 +113,10 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 			if answer == "" {
 				answer = "暂时无法生成回答，请换一种方式描述问题。"
 			}
+			if len(traces) > 0 && !traces[len(traces)-1].Success {
+				last := traces[len(traces)-1]
+				answer = summarizeLocalTool(last.Name, string(last.Result))
+			}
 			s.saveConversation(userID, conversationID, messages[1:])
 			s.recordRequestEnd(true, usage.TotalTokens, time.Since(startedAt))
 			logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, true, "")
