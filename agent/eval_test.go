@@ -26,16 +26,16 @@ type evalCase struct {
 }
 
 type evalResult struct {
-	ID        string `json:"id"`
-	Tier      string `json:"tier"`
-	Run       int    `json:"run"`
-	Passed    bool   `json:"passed"`
-	Reason    string `json:"reason,omitempty"`
-	Steps     int    `json:"steps"`
-	InputTokens int `json:"inputTokens"`
-	OutputTokens int `json:"outputTokens"`
-	Tokens    int    `json:"tokens"`
-	LatencyMS int64  `json:"latencyMs"`
+	ID           string `json:"id"`
+	Tier         string `json:"tier"`
+	Run          int    `json:"run"`
+	Passed       bool   `json:"passed"`
+	Reason       string `json:"reason,omitempty"`
+	Steps        int    `json:"steps"`
+	InputTokens  int    `json:"inputTokens"`
+	OutputTokens int    `json:"outputTokens"`
+	Tokens       int    `json:"tokens"`
+	LatencyMS    int64  `json:"latencyMs"`
 }
 
 func TestAgentGoldenEvaluation(t *testing.T) {
@@ -91,7 +91,7 @@ func TestAgentGoldenEvaluation(t *testing.T) {
 	consumedTokens := 0
 	stoppedEarly := false
 	seen := make(map[string]bool, len(cases))
-	evaluation:
+evaluation:
 	for _, tc := range cases {
 		if tc.ID == "" || tc.Input == "" || (tc.Tier != "basic" && tc.Tier != "varied" && tc.Tier != "adversarial") {
 			t.Fatalf("invalid case metadata: %+v", tc)
@@ -132,13 +132,13 @@ func TestAgentGoldenEvaluation(t *testing.T) {
 		t.Fatalf("unknown AGENT_EVAL_CASE %q", caseFilter)
 	}
 	type aggregate struct {
-		Passed    int   `json:"passed"`
-		Total     int   `json:"total"`
-		Steps     int   `json:"steps"`
-		InputTokens int `json:"inputTokens"`
-		OutputTokens int `json:"outputTokens"`
-		Tokens    int   `json:"tokens"`
-		LatencyMS int64 `json:"latencyMs"`
+		Passed       int   `json:"passed"`
+		Total        int   `json:"total"`
+		Steps        int   `json:"steps"`
+		InputTokens  int   `json:"inputTokens"`
+		OutputTokens int   `json:"outputTokens"`
+		Tokens       int   `json:"tokens"`
+		LatencyMS    int64 `json:"latencyMs"`
 	}
 	byTier := make(map[string]aggregate)
 	for _, result := range results {
