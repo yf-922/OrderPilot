@@ -15,6 +15,8 @@ import (
 	"product/datamodels"
 	"product/repositories"
 	"product/services"
+
+	"github.com/mediocregopher/radix/v3"
 )
 
 const (
@@ -44,14 +46,15 @@ type pendingAction struct {
 }
 
 type Service struct {
-	provider Provider
-	orders   services.IOrderService
-	products services.IProductService
-	now      func() time.Time
-	mu       sync.Mutex
-	chats    map[string]*conversation
-	pending  map[string]pendingAction
-	metrics  Metrics
+	provider  Provider
+	orders    services.IOrderService
+	products  services.IProductService
+	now       func() time.Time
+	mu        sync.Mutex
+	chats     map[string]*conversation
+	pending   map[string]pendingAction
+	metrics   Metrics
+	redisPool *radix.Pool
 }
 
 type ChatService interface {
@@ -63,6 +66,15 @@ type ChatService interface {
 
 func NewService(provider Provider, orders services.IOrderService, products services.IProductService) *Service {
 	return &Service{provider: provider, orders: orders, products: products, now: time.Now, chats: make(map[string]*conversation), pending: make(map[string]pendingAction)}
+}
+
+// NewServiceWithRedis enables cross-instance replay protection for tool calls
+// and confirmation tokens. The original constructor remains useful for tests
+// and local demo mode where the in-process guard is sufficient.
+func NewServiceWithRedis(provider Provider, orders services.IOrderService, products services.IProductService, redisPool *radix.Pool) *Service {
+	service := NewService(provider, orders, products)
+	service.redisPool = redisPool
+	return service
 }
 
 func (s *Service) Status() Status {
@@ -132,11 +144,17 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 		for _, call := range completion.Message.ToolCalls {
 			call = normalizeToolCall(call)
 			fingerprint := call.Name + ":" + string(call.Arguments)
-			if seenCalls[fingerprint] {
+			reserved, reserveErr := s.reserveToolCall(ctx, userID, conversationID, fingerprint, seenCalls)
+			if reserveErr != nil {
+				reserved = !seenCalls[fingerprint]
+				if reserved {
+					seenCalls[fingerprint] = true
+				}
+			}
+			if !reserved {
 				handoff = newHandoff("repeated_tool_call", request.Message, traces, "模型重复调用相同工具")
 				return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt), nil
 			}
-			seenCalls[fingerprint] = true
 			started := s.now()
 			result, action, toolErr := s.executeTool(ctx, userID, conversationID, call)
 			attempts := 1
@@ -286,6 +304,7 @@ func (s *Service) finishHandoff(userID int64, conversationID string, messages []
 		s.mu.Lock()
 		delete(s.pending, confirmation.Token)
 		s.mu.Unlock()
+		s.deleteConfirmation(confirmation.Token)
 	}
 	answer := "这次请求未能可靠完成，建议联系人工客服继续处理；我没有执行订单变更。"
 	s.saveConversation(userID, conversationID, append(messages[1:], Message{Role: "assistant", Content: answer}))
@@ -316,12 +335,7 @@ func normalizeToolCall(call ToolCall) ToolCall {
 }
 
 func (s *Service) Confirm(ctx context.Context, userID int64, request ConfirmRequest) (ChatResponse, error) {
-	s.mu.Lock()
-	action, ok := s.pending[request.Token]
-	if ok {
-		delete(s.pending, request.Token)
-	}
-	s.mu.Unlock()
+	action, ok := s.consumeConfirmation(ctx, request.Token)
 	if !ok || action.UserID != userID || action.ConversationID != request.ConversationID || s.now().After(action.ExpiresAt) {
 		return ChatResponse{}, ErrInvalidConfirmation
 	}
@@ -446,9 +460,14 @@ func (s *Service) executeTool(ctx context.Context, userID int64, conversationID 
 		}
 		token := randomID()
 		expires := s.now().Add(confirmationTTL)
+		pending := pendingAction{UserID: userID, ConversationID: conversationID, OrderID: orderID, ExpiresAt: expires}
 		s.mu.Lock()
-		s.pending[token] = pendingAction{UserID: userID, ConversationID: conversationID, OrderID: orderID, ExpiresAt: expires}
+		s.pending[token] = pending
 		s.mu.Unlock()
+		if err := s.storeConfirmation(token, pending); err != nil {
+			// Keep the in-process copy as a local fallback when Redis is unavailable.
+			log.Printf("agent confirmation redis store failed: %v", err)
+		}
 		action := &Confirmation{Token: token, Action: "cancel_order", OrderID: orderID, ExpiresAt: expires.UTC().Format(time.RFC3339)}
 		return result(map[string]any{"ok": true, "requiresConfirmation": true, "orderId": orderID, "expiresAt": action.ExpiresAt}), action, nil
 	default:

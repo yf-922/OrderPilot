@@ -74,13 +74,16 @@ func main() {
 		log.Println("redis unavailable, continuing without cache:", err)
 	}
 	if redisPool != nil {
-		log.Println("redis connected")
 		var pingResult string
 		if err = redisPool.Do(radix.Cmd(&pingResult, "PING")); err != nil {
 			log.Println("redis ping failed, continuing without cache:", err)
+			_ = redisPool.Close()
+			redisPool = nil
+		} else {
+			log.Println("redis connected")
+			log.Println("redis ping:", pingResult)
+			defer redisPool.Close()
 		}
-		log.Println("redis ping:", pingResult)
-		defer redisPool.Close()
 	}
 
 	// 创建应用级上下文，后续可用于依赖注入或资源释放控制。
@@ -115,7 +118,7 @@ func main() {
 	order.Handle(new(controllers.OrderController))
 
 	// 注册订单客服 Agent。模型仅能调用受控业务工具，写操作需要用户二次确认。
-	agentService := agent.NewService(agent.NewProviderFromEnv(), orderService, productService)
+	agentService := agent.NewServiceWithRedis(agent.NewProviderFromEnv(), orderService, productService, redisPool)
 	agentParty := app.Party("/agent")
 	agentParty.Use(common.RequireAuth)
 	agentMVC := mvc.New(agentParty)
