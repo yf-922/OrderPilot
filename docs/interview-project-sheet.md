@@ -15,15 +15,15 @@
 ## 简历项目展示终稿
 
 **GoWorks Product｜电商订单后端与订单客服 Agent**
-**技术栈：** Go、Iris、MySQL、Redis、Function Calling、第三方兼容网关（配置模型标识 `grok-4.5`）
+**技术栈：** Go、Iris、MySQL、Redis、Function Calling、OpenAI-compatible Chat Completions、第三方兼容网关（请求模型标识 `grok-4.5`）、Iris 模板、原生 JavaScript/CSS、Playwright
 
-- 面向商品查询、订单查询和取消订单场景，在 Go + Iris 电商后端中实现订单客服 Agent；通过 OpenAI-compatible Chat Completions 接入第三方网关配置的 `grok-4.5` 模型标识，模型负责意图理解和工具选择，业务规则与订单副作用由 Go Service 控制。
+- 面向商品查询、订单查询和取消订单场景，在 Go + Iris 电商后端中实现订单客服 Agent；后端通过 OpenAI-compatible Chat Completions 接入第三方兼容网关，模型负责意图理解和工具选择，业务规则、权限校验与订单副作用由 Go Service 控制，模型不直接访问数据库。
 - 实现最多 5 轮的 Function Calling 编排；商品工具结果只保留 ID、名称、库存等必要字段与前 20 条，按约 32 KB **字节预算**保留最近完整对话轮次。12 轮、每轮返回 100 个商品的长会话探针中，最大模型输入由约 233 KB 降至约 6.7 KB。
 - 设计商品搜索、我的订单、订单状态、取消预检查 4 个严格 JSON Schema 工具；工具层二次校验参数、登录身份和订单归属，检测重复工具调用，区分参数/业务/暂时性错误，避免模型越权或死循环。
 - 为取消订单引入 Human-in-the-loop：模型只能生成绑定用户与会话、5 分钟有效的单次确认令牌；确认接口再次校验后才执行取消和库存回滚。用户明确要求人工、投诉，或工具重复/超时/达到轮次上限时返回结构化人工协助信息。
-- 用固定 seed 的 30 条 challenge-v3 做同版本迭代，自动通过 **17/30 → 22/30（+5）**；改动后工具路径正确 **27/30**，在选对路径且需调用工具的题目中参数正确 **14/16**。平均延迟 **8.77s → 6.99s**，但样本 P95 **19.12s → 21.62s**，未宣称尾延迟优化；失败仍集中在歧义、多意图和非法参数。
+- 用固定 seed 的 30 条 challenge-v3 做同版本离线回归，按工具路径、参数、确认状态和最终回答规则判分；自动通过 **17/30 → 22/30（+5）**，工具路径正确 **27/30（90%）**，在选对路径且需要调用工具的题目中参数正确 **14/16（87.5%）**。平均 Token 消耗 **2,164 → 1,988**，平均延迟 **8.77s → 6.99s**；失败仍集中在歧义、多意图和非法参数，未将该结果包装为线上准确率或 SLO。
 
-在订单后端使用 MySQL 事务/行级锁防止超卖、`Idempotency-Key` 处理重试、Redis Cache-Aside 缓存商品；提供 Docker Compose、OpenAPI、CI、chaos case、逐题评测报告和 Agent 前端执行轨迹。
+- 在订单后端使用 MySQL 事务/行级锁防止超卖，使用 `Idempotency-Key` 处理订单重试；Redis 仅用于商品列表 Cache-Aside（60 秒 TTL，商品写入后失效）。前端采用 Iris 服务端模板、原生 JavaScript/CSS，通过 `fetch` 调用 `/agent/chat`、`/agent/confirm` 等接口，并展示工具轨迹、Token 和确认操作；提供 Docker Compose、OpenAPI、CI、chaos case 和逐题评测报告。
 
 **指标口径：** 上述结果均为固定题集单次离线运行。安全题严格自动评分 2/5；另外 3 题因拒绝语句引用禁词被误判，人工确认没有越权工具调用，不能宣称“提示注入拦截率 100%”。网关返回的模型标识不能证明底层是 xAI 官方公开型号。
 
