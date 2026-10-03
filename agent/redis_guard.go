@@ -14,13 +14,33 @@ import (
 )
 
 const (
-	toolFingerprintTTL = 2 * time.Minute
-	confirmationKeyTTL = 5 * time.Minute
+	toolFingerprintTTL        = 2 * time.Minute
+	confirmationKeyTTL        = 5 * time.Minute
+	toolBucketCapacity        = 5
+	toolBucketRefillPerSecond = 1
 )
 
-// reserveToolCall uses Redis SET NX EX as a small distributed token bucket:
-// one identical tool call can enter a conversation during the TTL window.
-// The local map remains the fallback for demo mode and Redis outages.
+const tokenBucketScript = `
+local values = redis.call('HMGET', KEYS[1], 'tokens', 'updated')
+local capacity = tonumber(ARGV[1])
+local refill = tonumber(ARGV[2])
+local now = tonumber(ARGV[3])
+local tokens = tonumber(values[1]) or capacity
+local updated = tonumber(values[2]) or now
+tokens = math.min(capacity, tokens + math.max(0, now - updated) * refill / 1000)
+if tokens < 1 then
+  redis.call('HSET', KEYS[1], 'tokens', tokens, 'updated', now)
+  redis.call('EXPIRE', KEYS[1], 30)
+  return 0
+end
+redis.call('HSET', KEYS[1], 'tokens', tokens - 1, 'updated', now)
+redis.call('EXPIRE', KEYS[1], 30)
+return 1
+`
+
+// reserveToolCall first consumes one Redis token from the per-conversation
+// bucket, then records the exact tool fingerprint with SET NX EX. The local
+// map remains the fallback for demo mode and Redis outages.
 func (s *Service) reserveToolCall(ctx context.Context, userID int64, conversationID, fingerprint string, local map[string]bool) (bool, error) {
 	if local[fingerprint] {
 		return false, nil
@@ -31,6 +51,16 @@ func (s *Service) reserveToolCall(ctx context.Context, userID int64, conversatio
 	}
 
 	digest := sha256.Sum256([]byte(fingerprint))
+	bucketKey := fmt.Sprintf("agent:bucket:%d:%s", userID, conversationID)
+	var allowed int
+	now := time.Now().UnixMilli()
+	if err := s.redisPool.Do(radix.Cmd(&allowed, "EVAL", tokenBucketScript, "1", bucketKey,
+		strconv.Itoa(toolBucketCapacity), strconv.Itoa(toolBucketRefillPerSecond), strconv.FormatInt(now, 10))); err != nil {
+		return false, err
+	}
+	if allowed != 1 {
+		return false, nil
+	}
 	key := fmt.Sprintf("agent:tool:%d:%s:%s", userID, conversationID, hex.EncodeToString(digest[:]))
 	var reply string
 	err := s.redisPool.Do(radix.Cmd(&reply, "SET", key, "1", "NX", "EX", strconv.Itoa(int(toolFingerprintTTL/time.Second))))
