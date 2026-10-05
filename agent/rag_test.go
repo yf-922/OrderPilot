@@ -44,6 +44,7 @@ func TestAgenticRAGUsesKnowledgeToolForPolicyQuestion(t *testing.T) {
 func TestKnowledgeResultCompactionReducesModelContext(t *testing.T) {
 	raw := mustJSON(map[string]any{"found": true, "items": []KnowledgeChunk{{DocumentID: "policy", Content: strings.Repeat("地址修改规则 ", 200)}}})
 	compact := compactToolResult("search_knowledge", raw)
+	t.Logf("RAG_CONTEXT_COMPACTION rawBytes=%d compactBytes=%d reduction=%.1f%%", len(raw), len(compact), float64(len(raw)-len(compact))*100/float64(len(raw)))
 	if len(compact) >= len(raw) || len(compact) > 5000 {
 		t.Fatalf("knowledge result was not compacted: raw=%d compact=%d", len(raw), len(compact))
 	}
