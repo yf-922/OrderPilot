@@ -118,7 +118,7 @@ func main() {
 	order.Handle(new(controllers.OrderController))
 
 	// 注册订单客服 Agent。模型仅能调用受控业务工具，写操作需要用户二次确认。
-	agentService := agent.NewServiceWithRedis(agent.NewProviderFromEnv(), orderService, productService, redisPool)
+	agentService := agent.NewServiceWithRedisAndKnowledge(agent.NewProviderFromEnv(), orderService, productService, redisPool, agent.DefaultKnowledgeRetriever())
 	agentParty := app.Party("/agent")
 	agentParty.Use(common.RequireAuth)
 	agentMVC := mvc.New(agentParty)

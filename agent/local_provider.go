@@ -35,6 +35,9 @@ func (p *LocalProvider) Complete(_ context.Context, input CompletionRequest) (Co
 	case (strings.Contains(text, "订单") || strings.Contains(lower, "order")) && firstOrderID(text) != 0:
 		call.Name = "get_order_status"
 		call.Arguments = mustJSON(map[string]any{"order_id": firstOrderID(text)})
+	case strings.Contains(text, "退款") || strings.Contains(text, "配送") || strings.Contains(text, "地址") || strings.Contains(text, "规则") || strings.Contains(text, "加急"):
+		call.Name = "search_knowledge"
+		call.Arguments = mustJSON(map[string]any{"query": text})
 	case strings.Contains(text, "订单") || strings.Contains(text, "购买") || strings.Contains(lower, "order"):
 		call.Name = "list_my_orders"
 		call.Arguments = mustJSON(map[string]any{"page": 1, "page_size": 10})
@@ -80,6 +83,12 @@ func summarizeLocalTool(name, content string) string {
 		return fmt.Sprintf("订单 %v 当前状态是“%v”。", result["orderId"], result["statusText"])
 	case "prepare_cancel_order":
 		return fmt.Sprintf("订单 %v 可以取消。该操作会恢复库存，请点击确认按钮后执行。", result["orderId"])
+	case "search_knowledge":
+		items, _ := result["items"].([]any)
+		if len(items) == 0 {
+			return "知识库没有找到匹配规则，建议联系人工客服。"
+		}
+		return "已检索相关业务规则，依据来源片段生成回答。"
 	default:
 		return "工具调用已完成。"
 	}

@@ -35,7 +35,7 @@ func TestCompatibleProviderToolCallContract(t *testing.T) {
 		t.Fatalf("unexpected request: %+v", received)
 	}
 	tools, ok := received["tools"].([]any)
-	if !ok || len(tools) != 4 {
+	if !ok || len(tools) != 5 {
 		t.Fatalf("tools missing from request: %+v", received["tools"])
 	}
 	if len(completion.Message.ToolCalls) != 1 || completion.Message.ToolCalls[0].Name != "get_order_status" || completion.Usage.TotalTokens != 14 {

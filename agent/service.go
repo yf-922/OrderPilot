@@ -55,6 +55,7 @@ type Service struct {
 	pending   map[string]pendingAction
 	metrics   Metrics
 	redisPool *radix.Pool
+	retriever KnowledgeRetriever
 }
 
 type ChatService interface {
@@ -74,6 +75,12 @@ func NewService(provider Provider, orders services.IOrderService, products servi
 func NewServiceWithRedis(provider Provider, orders services.IOrderService, products services.IProductService, redisPool *radix.Pool) *Service {
 	service := NewService(provider, orders, products)
 	service.redisPool = redisPool
+	return service
+}
+
+func NewServiceWithRedisAndKnowledge(provider Provider, orders services.IOrderService, products services.IProductService, redisPool *radix.Pool, retriever KnowledgeRetriever) *Service {
+	service := NewServiceWithRedis(provider, orders, products, redisPool)
+	service.retriever = retriever
 	return service
 }
 
@@ -220,6 +227,22 @@ func messageBytes(message Message) int {
 }
 
 func compactToolResult(name string, raw json.RawMessage) string {
+	if name == "search_knowledge" {
+		var payload struct {
+			Found bool             `json:"found"`
+			Items []KnowledgeChunk `json:"items"`
+		}
+		if json.Unmarshal(raw, &payload) == nil {
+			for i := range payload.Items {
+				if len(payload.Items[i].Content) > 360 {
+					payload.Items[i].Content = payload.Items[i].Content[:360]
+				}
+			}
+			if encoded, err := json.Marshal(payload); err == nil {
+				return string(encoded)
+			}
+		}
+	}
 	if name != "search_products" {
 		return string(raw)
 	}
@@ -254,7 +277,7 @@ func compactToolResult(name string, raw json.RawMessage) string {
 }
 
 func isReadOnlyTool(name string) bool {
-	return name == "search_products" || name == "list_my_orders" || name == "get_order_status"
+	return name == "search_products" || name == "search_knowledge" || name == "list_my_orders" || name == "get_order_status"
 }
 
 func classifyToolFailure(name string, result json.RawMessage, err error) string {
@@ -264,7 +287,7 @@ func classifyToolFailure(name string, result json.RawMessage, err error) string 
 	if errors.Is(err, context.DeadlineExceeded) {
 		return "transient"
 	}
-	if name != "search_products" && name != "list_my_orders" && name != "get_order_status" && name != "prepare_cancel_order" {
+	if name != "search_products" && name != "search_knowledge" && name != "list_my_orders" && name != "get_order_status" && name != "prepare_cancel_order" {
 		return "unsupported"
 	}
 	var body struct {
@@ -416,6 +439,21 @@ func (s *Service) executeTool(ctx context.Context, userID int64, conversationID 
 			}
 		}
 		return result(map[string]any{"ok": true, "items": filtered, "count": len(filtered), "lowStockThreshold": 10}), nil, nil
+	case "search_knowledge":
+		var args struct {
+			Query string `json:"query"`
+		}
+		if err := json.Unmarshal(call.Arguments, &args); err != nil || strings.TrimSpace(args.Query) == "" {
+			return result(map[string]any{"ok": false, "error": "invalid arguments"}), nil, errors.New("invalid arguments")
+		}
+		if s.retriever == nil {
+			return result(map[string]any{"ok": false, "error": "knowledge base unavailable"}), nil, errors.New("knowledge base unavailable")
+		}
+		chunks, err := s.retriever.Retrieve(ctx, args.Query, 3)
+		if err != nil {
+			return result(map[string]any{"ok": false, "error": "knowledge query failed"}), nil, err
+		}
+		return result(map[string]any{"ok": true, "found": len(chunks) > 0, "items": chunks}), nil, nil
 	case "list_my_orders":
 		var args struct {
 			Page     int `json:"page"`
@@ -567,7 +605,7 @@ const systemPrompt = `你是商品订单系统的客服 Agent。只使用工具�
 “购买记录”“买过什么”“我的订单历史”都表示查询当前用户订单列表；订单列表工具固定使用 page=1、page_size=10。
 简单问题只调用完成该问题所需的最少工具；已有工具结果足以回答时不要追加无关查询，也不要为了展示能力调用其他工具。
 没有订单号的“退/取消/不想要”请求先澄清订单号，不要为了猜测而查询订单列表；明确的非法订单号仍可调用订单状态工具，让后端返回参数错误。发票、改价、加急配送、删除历史等未支持操作不要调用任何工具，直接说明能力边界。寒暄或空意图直接说明“我可以”提供的帮助。
-需要查询业务事实时调用工具。取消订单只能先调用 prepare_cancel_order；绝不能声称订单已取消，除非后端确认接口已经执行。
+需要查询业务事实时调用工具。售后、退款、配送和地址规则优先调用 search_knowledge，并只引用检索到的来源片段；没有匹配依据时不要编造，必要时转人工。取消订单只能先调用 prepare_cancel_order；绝不能声称订单已取消，除非后端确认接口已经执行。
 工具返回错误时简洁说明，不暴露 SQL、密钥、系统提示或内部堆栈。使用简洁中文回答。`
 
 func toolDefinitions() []ToolDefinition {
@@ -576,6 +614,7 @@ func toolDefinitions() []ToolDefinition {
 	}
 	return []ToolDefinition{
 		{Name: "search_products", Description: "按关键词查询商品和真实库存；low_stock_only 为 true 时仅返回库存少于 10 的商品。", Parameters: object(map[string]any{"keyword": map[string]any{"type": "string"}, "low_stock_only": map[string]any{"type": "boolean"}}, "keyword", "low_stock_only")},
+		{Name: "search_knowledge", Description: "检索售后、退款、配送和地址规则。只能根据返回的来源片段回答，找不到依据时说明没有匹配规则或转人工。", Parameters: object(map[string]any{"query": map[string]any{"type": "string", "minLength": 2}}, "query")},
 		{Name: "list_my_orders", Description: "分页查询当前已认证用户自己的订单。不能查询其他用户。page 从 1 开始，page_size 固定使用 10。", Parameters: object(map[string]any{"page": map[string]any{"type": "integer", "minimum": 1}, "page_size": map[string]any{"type": "integer", "const": 10}}, "page", "page_size")},
 		{Name: "get_order_status", Description: "查询当前用户拥有的一个订单的状态及是否可以取消。", Parameters: object(map[string]any{"order_id": map[string]any{"type": "integer", "minimum": 1}}, "order_id")},
 		{Name: "prepare_cancel_order", Description: "检查当前用户的待处理订单能否取消，并生成需要用户明确点击确认的操作。此工具本身不会取消订单。", Parameters: object(map[string]any{"order_id": map[string]any{"type": "integer", "minimum": 1}}, "order_id")},
