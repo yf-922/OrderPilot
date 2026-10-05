@@ -89,6 +89,9 @@ func (r *HybridRetriever) Retrieve(ctx context.Context, query string, topK int) 
 		topK = 3
 	}
 	query = normalizeKnowledgeQuery(query)
+	if unsupportedKnowledgeQuery(query) {
+		return []KnowledgeChunk{}, nil
+	}
 	terms := tokenize(query)
 	queryNgrams := ngrams(query)
 	results := make([]KnowledgeChunk, 0, len(r.documents))
@@ -119,7 +122,7 @@ func (r *HybridRetriever) Retrieve(ctx context.Context, query string, topK int) 
 }
 
 func normalizeKnowledgeQuery(value string) string {
-	replacements := map[string]string{"不想要": "取消", "退货": "退款", "钱多久": "退款到账", "快点送": "加急配送", "改收货地": "地址修改", "收货地点": "地址"}
+	replacements := map[string]string{"不想要": "取消", "退货": "退款", "钱多久": "退款到账", "快点送": "加急配送", "改收货地": "地址修改", "收货地点": "地址", "物流": "配送", "速度": "时效", "因素": "影响"}
 	for from, to := range replacements {
 		value = strings.ReplaceAll(value, from, to)
 	}
@@ -136,6 +139,15 @@ func normalizeKnowledgeQuery(value string) string {
 		value += " 收货 修改"
 	}
 	return value
+}
+
+func unsupportedKnowledgeQuery(value string) bool {
+	for _, marker := range []string{"积分", "优惠券", "发票", "提示词", "内部规则", "别人的", "价格改"} {
+		if strings.Contains(value, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 func ngrams(value string) map[string]bool {

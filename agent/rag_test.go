@@ -78,6 +78,7 @@ func TestHybridRetrieverRegressionSet(t *testing.T) {
 			unknowns++
 			if len(chunks) > 0 {
 				unknownFalsePositives++
+				t.Logf("FALSE_POSITIVE id=%s query=%q chunks=%+v", tc.ID, tc.Query, chunks)
 			}
 			continue
 		}
