@@ -1,0 +1,14 @@
+[
+  {"id":"R01","query":"待处理订单可以取消吗？","expected":["cancel-policy-v1"]},
+  {"id":"R02","query":"我不想要这个订单了怎么办","expected":["cancel-policy-v1"]},
+  {"id":"R03","query":"订单取消后多久能退款","expected":["refund-policy-v1"]},
+  {"id":"R04","query":"退款的钱什么时候到账","expected":["refund-policy-v1"]},
+  {"id":"R05","query":"可以快点送吗？","expected":["delivery-policy-v1"]},
+  {"id":"R06","query":"配送一般需要多久","expected":["delivery-policy-v1"]},
+  {"id":"R07","query":"我想改收货地点","expected":["address-policy-v1"]},
+  {"id":"R08","query":"订单地址修改有什么规则","expected":["address-policy-v1"]},
+  {"id":"R09","query":"已经发货了还能改地址吗","expected":["address-policy-v1"]},
+  {"id":"R10","query":"积分兑换规则是什么","expected":[]},
+  {"id":"R11","query":"如何删除账号历史订单","expected":[]},
+  {"id":"R12","query":"优惠券可以提现吗","expected":[]}
+]
