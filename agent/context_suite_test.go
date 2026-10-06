@@ -172,6 +172,7 @@ func TestCustomerContextReplaySuite(t *testing.T) {
 	}
 	seen := map[string]bool{}
 	report := make([]contextReplayMeasurement, 0, len(cases))
+	envelopes := make([]map[string]any, 0, len(cases))
 	var totalRaw, totalCompact, totalWindow, totalRemoved int
 	var meanReduction float64
 	for _, c := range cases {
@@ -247,6 +248,15 @@ func TestCustomerContextReplaySuite(t *testing.T) {
 			totalRemoved += m.RemovedTurns
 			meanReduction += m.ReductionPercent
 			report = append(report, m)
+			stages := map[string]any{"id": c.ID, "scenario": c.Scenario}
+			for name, messages := range map[string][]Message{"raw": raw, "compact": compact, "window": window} {
+				payload, err := json.Marshal(map[string]any{"messages": messages, "tools": toolDefinitions()})
+				if err != nil {
+					t.Fatal(err)
+				}
+				stages[name] = string(payload)
+			}
+			envelopes = append(envelopes, stages)
 			t.Logf("%s turns=%d raw=%d compact=%d window=%d reduction=%.2f%% removedTurns=%d", c.ID, m.Turns, m.RawBytes, m.CompactBytes, m.WindowBytes, m.ReductionPercent, m.RemovedTurns)
 		})
 	}
@@ -260,6 +270,15 @@ func TestCustomerContextReplaySuite(t *testing.T) {
 	}
 	t.Log("CONTEXT_SUITE_REPORT " + string(encoded))
 	// Optional generated report for inspection; normal CI does not mutate files.
+	if path := strings.TrimSpace(os.Getenv("CONTEXT_REPLAY_ENVELOPES_PATH")); path != "" {
+		payload, err := json.Marshal(envelopes)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err = os.WriteFile(path, payload, 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if path := strings.TrimSpace(os.Getenv("CONTEXT_REPLAY_REPORT_PATH")); path != "" {
 		if err = os.WriteFile(path, append(encoded, '\n'), 0600); err != nil {
 			t.Fatal(err)
