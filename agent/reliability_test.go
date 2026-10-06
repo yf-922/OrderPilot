@@ -48,7 +48,7 @@ func (p *rotatingProvider) Name() string  { return "rotating-fixture" }
 func (p *rotatingProvider) Model() string { return "rotating-fixture-v1" }
 func (p *rotatingProvider) Complete(context.Context, CompletionRequest) (Completion, error) {
 	p.n++
-	return Completion{Message: Message{Role: "assistant", ToolCalls: []ToolCall{{ID: randomID(), Name: "get_order_status", Arguments: json.RawMessage(mustJSON(map[string]any{"order_id": int64(p.n)}))}}}}, nil
+	return Completion{Message: Message{Role: "assistant", ToolCalls: []ToolCall{{ID: randomID(), Name: "get_order_status", Arguments: json.RawMessage(mustJSON(map[string]any{"order_id": -int64(p.n)}))}}}}, nil
 }
 
 func TestMaxTurnsRequestsHandoff(t *testing.T) {

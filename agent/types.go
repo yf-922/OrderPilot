@@ -68,6 +68,7 @@ type ChatRequest struct {
 }
 
 type ChatResponse struct {
+	TaskStatus     string        `json:"taskStatus"`
 	ConversationID string        `json:"conversationId"`
 	Message        string        `json:"message"`
 	Provider       string        `json:"provider"`

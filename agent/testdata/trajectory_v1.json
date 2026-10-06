@@ -3,7 +3,7 @@
   {"id":"T02","kind":"multi_tool","input":"列出我的订单，再查看订单18","steps":[{"name":"list_my_orders","arguments":{"page":1,"page_size":10},"success":true},{"name":"get_order_status","arguments":{"order_id":18},"success":true}],"answer":"已完成查询"},
   {"id":"T03","kind":"multi_tool","input":"查低库存商品和订单18","steps":[{"name":"search_products","arguments":{"keyword":"","low_stock_only":true},"success":true},{"name":"get_order_status","arguments":{"order_id":18},"success":true}],"answer":"已完成查询"},
   {"id":"T04","kind":"confirmation","input":"先查订单18再申请取消","steps":[{"name":"get_order_status","arguments":{"order_id":18},"success":true},{"name":"prepare_cancel_order","arguments":{"order_id":18},"success":true}],"answer":"请确认","confirmation":true},
-  {"id":"T05","kind":"recovery","input":"订单99不存在时，列出我的订单","steps":[{"name":"get_order_status","arguments":{"order_id":99},"success":false},{"name":"list_my_orders","arguments":{"page":1,"page_size":10},"success":true}],"answer":"已列出订单"},
+  {"id":"T05","kind":"business_handoff","input":"订单99不存在时，列出我的订单","steps":[{"name":"get_order_status","arguments":{"order_id":99},"success":false}],"answer":"查询没有完成：未找到你名下的这个订单，请核对订单号。"},
   {"id":"T06","kind":"tool_timeout","input":"商品服务超时后说明失败","productFailure":true,"steps":[{"name":"search_products","arguments":{"keyword":"","low_stock_only":false},"success":false}],"answer":"查询没有完成：服务暂时不可用，请稍后重试。"},
   {"id":"T07","kind":"tool_failure","input":"查询不存在的订单99","steps":[{"name":"get_order_status","arguments":{"order_id":99},"success":false}],"answer":"查询没有完成：未找到你名下的这个订单，请核对订单号。"},
   {"id":"T08","kind":"invalid_tool","input":"未知工具不能产生副作用","steps":[{"name":"delete_all_orders","arguments":{},"success":false}],"answer":"操作没有完成：暂不支持此请求。"},

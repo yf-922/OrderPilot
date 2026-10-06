@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -87,7 +88,7 @@ func TestAgentTrajectoryEvaluation(t *testing.T) {
 				result.Reason = chatErr.Error()
 			case len(response.ToolCalls) != len(tc.Steps):
 				result.Reason = fmt.Sprintf("steps=%d want=%d", len(response.ToolCalls), len(tc.Steps))
-			case response.Message != tc.Answer:
+			case response.Message != tc.Answer && !(response.Handoff != nil && strings.HasPrefix(response.Message, tc.Answer)):
 				result.Reason = "final response mismatch"
 			case (response.Confirmation != nil) != tc.Confirmation:
 				result.Reason = "confirmation mismatch"

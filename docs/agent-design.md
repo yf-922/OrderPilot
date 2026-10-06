@@ -45,6 +45,16 @@ Agentic RAG 路径由模型通过 `search_knowledge` 工具自主选择，与订
 
 ## Provider 与降级
 
+### 运行时错误恢复与任务状态
+
+工具执行前由服务端检查 JSON 类型、未知字段和正整数订单号，身份来自登录态；订单查询按当前用户过滤，不存在和无权限统一返回不存在，避免泄露他人订单。参数错误作为结构化 Observation 回传，包含 `ok`、`errorType`、`message`、`recoverable` 和 `nextAction`，允许模型修正参数或询问用户，不允许修正用户身份以绕过权限。
+
+只读工具的 deadline/network timeout 在请求未取消时最多重试一次；写操作和取消预检查不自动重试。重试失败、业务拒绝、权限拒绝或未知工具立即停止调度并返回人工交接状态，同一批剩余工具仅补齐 skipped Observation、不执行。重复调用检测和最多五次推理防止无限纠错。业务拒绝生成 Observation 并保存在会话，但不再调用模型尝试绕过规则。
+
+`taskStatus` 区分 `answered`（生成答复，不等于修改成功）、`needs_clarification`（参数失败仍未解决）、`awaiting_confirmation`（取消预检查成功）、`handoff`（需人工协助）、`completed`（用户确认且取消服务成功）。未解决的工具错误不能被无关工具成功覆盖；取消仅由确认接口的业务成功判定完成，不采信模型声称“取消成功”。目前未实现任意自然语言目标的通用完成度判定器。人工交接包含目标、成功执行的工具和失败原因，尚未自动创建外部客服工单。
+
+上述是请求内运行时兜底；日志归因、bad case 回流和 Prompt 迭代属于请求结束后的质量改进，两者不能互相替代。
+
 `CompatibleProvider` 使用 OpenAI-compatible Chat Completions 工具调用协议，可通过 `AI_BASE_URL` 和 `AI_MODEL` 切换模型。配置 `XAI_API_KEY` 后默认连接 Grok；无 Key 时使用 `LocalProvider`，使 CI、演示和 Agent 工具测试不依赖外部网络。
 
 本地 Provider 只用于确定性演示和测试，不等同于大模型能力。页面会明确显示“Grok 在线”或“本地演示”。

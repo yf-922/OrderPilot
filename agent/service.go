@@ -1,13 +1,16 @@
 package agent
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
+	"net"
 	"strings"
 	"sync"
 	"time"
@@ -118,6 +121,7 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 	usage := Usage{}
 	var confirmation *Confirmation
 	seenCalls := make(map[string]bool)
+	unresolved := make(map[string]ToolTrace)
 	var handoff *Handoff
 	if shouldEscalateToHuman(request.Message) {
 		handoff = newHandoff("explicit_human_request", request.Message, traces, "用户明确要求人工或表达投诉/强烈不满")
@@ -135,20 +139,33 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 		usage.TotalTokens += completion.Usage.TotalTokens
 		messages = append(messages, completion.Message)
 		if len(completion.Message.ToolCalls) == 0 {
+			status := "answered"
+			if confirmation != nil {
+				status = "awaiting_confirmation"
+			}
 			answer := strings.TrimSpace(completion.Message.Content)
 			if answer == "" {
 				answer = "暂时无法生成回答，请换一种方式描述问题。"
 			}
-			if len(traces) > 0 && !traces[len(traces)-1].Success {
-				last := traces[len(traces)-1]
-				answer = summarizeLocalTool(last.Name, string(last.Result))
+			if confirmation != nil && (strings.Contains(answer, "取消成功") || strings.Contains(answer, "已取消")) {
+				answer = "取消申请已准备好，订单尚未变更，请确认后继续。"
 			}
+			if len(unresolved) > 0 {
+				status = "needs_clarification"
+				for i := len(traces) - 1; i >= 0; i-- {
+					if failed, ok := unresolved[traces[i].Name]; ok {
+						answer = summarizeLocalTool(failed.Name, string(failed.Result))
+						break
+					}
+				}
+			}
+			messages[len(messages)-1].Content = answer
 			s.saveConversation(userID, conversationID, messages[1:])
-			s.recordRequestEnd(true, usage.TotalTokens, time.Since(startedAt))
-			logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, true, "")
-			return ChatResponse{ConversationID: conversationID, Message: answer, Provider: s.provider.Name(), Model: s.provider.Model(), ToolCalls: traces, Confirmation: confirmation, Usage: usage, Handoff: handoff}, nil
+			s.recordRequestEnd(len(unresolved) == 0, usage.TotalTokens, time.Since(startedAt))
+			logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, len(unresolved) == 0, "")
+			return ChatResponse{TaskStatus: status, ConversationID: conversationID, Message: answer, Provider: s.provider.Name(), Model: s.provider.Model(), ToolCalls: traces, Confirmation: confirmation, Usage: usage, Handoff: handoff}, nil
 		}
-		for _, call := range completion.Message.ToolCalls {
+		for callIndex, call := range completion.Message.ToolCalls {
 			call = normalizeToolCall(call)
 			fingerprint := call.Name + ":" + string(call.Arguments)
 			reserved, reserveErr := s.reserveToolCall(ctx, userID, conversationID, fingerprint, seenCalls)
@@ -159,26 +176,52 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 				}
 			}
 			if !reserved {
+				for _, skipped := range completion.Message.ToolCalls[callIndex:] {
+					messages = append(messages, Message{Role: "tool", Name: skipped.Name, ToolCallID: skipped.ID, Content: `{"ok":false,"errorType":"skipped","nextAction":"handoff"}`})
+				}
 				handoff = newHandoff("repeated_tool_call", request.Message, traces, "模型重复调用相同工具")
 				return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt), nil
 			}
 			started := s.now()
 			result, action, toolErr := s.executeTool(ctx, userID, conversationID, call)
 			attempts := 1
-			if errors.Is(toolErr, context.DeadlineExceeded) && isReadOnlyTool(call.Name) && ctx.Err() == nil {
+			if isTransientToolError(toolErr) && isReadOnlyTool(call.Name) && ctx.Err() == nil {
 				result, action, toolErr = s.executeTool(ctx, userID, conversationID, call)
 				attempts++
 			}
 			failureClass := classifyToolFailure(call.Name, result, toolErr)
 			trace := ToolTrace{Name: call.Name, Arguments: call.Arguments, Result: result, DurationMS: s.now().Sub(started).Milliseconds(), Success: toolErr == nil, FailureClass: failureClass, Attempts: attempts}
 			traces = append(traces, trace)
+			if toolErr != nil {
+				unresolved[call.Name] = trace
+			} else {
+				delete(unresolved, call.Name)
+			}
 			s.recordTool(trace.Success)
 			if action != nil {
 				confirmation = action
 			}
-			messages = append(messages, Message{Role: "tool", Name: call.Name, ToolCallID: call.ID, Content: compactToolResult(call.Name, result)})
-			if failureClass == "transient" {
-				handoff = newHandoff("tool_unavailable", request.Message, traces, "业务查询连续超时")
+			observation := compactToolResult(call.Name, result)
+			if toolErr != nil {
+				var original map[string]any
+				_ = json.Unmarshal(result, &original)
+				nextAction := "handoff"
+				if failureClass == "invalid_arguments" {
+					nextAction = "clarify_or_correct_arguments"
+				}
+				observation = string(mustJSON(map[string]any{"ok": false, "error": original["error"], "errorType": failureClass, "message": summarizeLocalTool(call.Name, string(result)), "recoverable": failureClass == "invalid_arguments", "nextAction": nextAction}))
+			}
+			messages = append(messages, Message{Role: "tool", Name: call.Name, ToolCallID: call.ID, Content: observation})
+			if toolErr != nil && failureClass != "invalid_arguments" {
+				// Close every outstanding tool-call ID without executing further tools.
+				for _, skipped := range completion.Message.ToolCalls[callIndex+1:] {
+					messages = append(messages, Message{Role: "tool", Name: skipped.Name, ToolCallID: skipped.ID, Content: `{"ok":false,"errorType":"skipped","nextAction":"handoff"}`})
+				}
+				handoff = newHandoff("tool_"+failureClass, request.Message, traces, summarizeLocalTool(call.Name, string(result)))
+				if failureClass == "transient" {
+					handoff.Reason = "tool_unavailable"
+				}
+				return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt), nil
 			}
 		}
 	}
@@ -280,11 +323,16 @@ func isReadOnlyTool(name string) bool {
 	return name == "search_products" || name == "search_knowledge" || name == "list_my_orders" || name == "get_order_status"
 }
 
+func isTransientToolError(err error) bool {
+	var networkError net.Error
+	return errors.Is(err, context.DeadlineExceeded) || (errors.As(err, &networkError) && networkError.Timeout())
+}
+
 func classifyToolFailure(name string, result json.RawMessage, err error) string {
 	if err == nil {
 		return ""
 	}
-	if errors.Is(err, context.DeadlineExceeded) {
+	if isTransientToolError(err) {
 		return "transient"
 	}
 	if name != "search_products" && name != "search_knowledge" && name != "list_my_orders" && name != "get_order_status" && name != "prepare_cancel_order" {
@@ -307,7 +355,9 @@ func classifyToolFailure(name string, result json.RawMessage, err error) string 
 func newHandoff(reason, goal string, traces []ToolTrace, failure string) *Handoff {
 	tools := make([]string, 0, len(traces))
 	for _, trace := range traces {
-		tools = append(tools, trace.Name)
+		if trace.Success {
+			tools = append(tools, trace.Name)
+		}
 	}
 	return &Handoff{Reason: reason, Goal: goal, CompletedTools: tools, Failure: failure}
 }
@@ -330,10 +380,14 @@ func (s *Service) finishHandoff(userID int64, conversationID string, messages []
 		s.deleteConfirmation(confirmation.Token)
 	}
 	answer := "这次请求未能可靠完成，建议联系人工客服继续处理；我没有执行订单变更。"
+	if len(traces) > 0 && !traces[len(traces)-1].Success {
+		last := traces[len(traces)-1]
+		answer = summarizeLocalTool(last.Name, string(last.Result)) + " 建议联系人工客服继续处理；我没有执行订单变更。"
+	}
 	s.saveConversation(userID, conversationID, append(messages[1:], Message{Role: "assistant", Content: answer}))
 	s.recordRequestEnd(false, usage.TotalTokens, time.Since(startedAt))
 	logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, false, handoff.Reason)
-	return ChatResponse{ConversationID: conversationID, Message: answer, Provider: s.provider.Name(), Model: s.provider.Model(), ToolCalls: traces, Usage: usage, Handoff: handoff}
+	return ChatResponse{TaskStatus: "handoff", ConversationID: conversationID, Message: answer, Provider: s.provider.Name(), Model: s.provider.Model(), ToolCalls: traces, Usage: usage, Handoff: handoff}
 }
 
 func normalizeToolCall(call ToolCall) ToolCall {
@@ -344,7 +398,7 @@ func normalizeToolCall(call ToolCall) ToolCall {
 		Page     int `json:"page"`
 		PageSize int `json:"page_size"`
 	}
-	if json.Unmarshal(call.Arguments, &args) != nil {
+	if decodeToolArguments(call.Arguments, &args) != nil {
 		return call
 	}
 	if args.Page < 1 {
@@ -372,7 +426,7 @@ func (s *Service) Confirm(ctx context.Context, userID int64, request ConfirmRequ
 	s.appendConversation(userID, action.ConversationID, Message{Role: "assistant", Content: message})
 	trace := ToolTrace{Name: "cancel_my_pending_order", Arguments: mustJSON(map[string]any{"order_id": action.OrderID}), Result: mustJSON(map[string]any{"ok": true, "orderId": action.OrderID}), Success: true}
 	logAgentRun(userID, action.ConversationID, s.provider.Name(), s.provider.Model(), []ToolTrace{trace}, Usage{}, true, "")
-	return ChatResponse{ConversationID: action.ConversationID, Message: message, Provider: s.provider.Name(), Model: s.provider.Model(), ToolCalls: []ToolTrace{trace}}, nil
+	return ChatResponse{TaskStatus: "completed", ConversationID: action.ConversationID, Message: message, Provider: s.provider.Name(), Model: s.provider.Model(), ToolCalls: []ToolTrace{trace}}, nil
 }
 
 func (s *Service) recordRequestStart() {
@@ -425,7 +479,7 @@ func (s *Service) executeTool(ctx context.Context, userID int64, conversationID 
 			Keyword      string `json:"keyword"`
 			LowStockOnly bool   `json:"low_stock_only"`
 		}
-		if err := json.Unmarshal(call.Arguments, &args); err != nil {
+		if err := decodeToolArguments(call.Arguments, &args); err != nil {
 			return result(map[string]any{"ok": false, "error": "invalid arguments"}), nil, err
 		}
 		items, _, err := s.products.ListProducts(1, 100, strings.TrimSpace(args.Keyword))
@@ -443,7 +497,7 @@ func (s *Service) executeTool(ctx context.Context, userID int64, conversationID 
 		var args struct {
 			Query string `json:"query"`
 		}
-		if err := json.Unmarshal(call.Arguments, &args); err != nil || strings.TrimSpace(args.Query) == "" {
+		if err := decodeToolArguments(call.Arguments, &args); err != nil || strings.TrimSpace(args.Query) == "" {
 			return result(map[string]any{"ok": false, "error": "invalid arguments"}), nil, errors.New("invalid arguments")
 		}
 		if s.retriever == nil {
@@ -459,7 +513,7 @@ func (s *Service) executeTool(ctx context.Context, userID int64, conversationID 
 			Page     int `json:"page"`
 			PageSize int `json:"page_size"`
 		}
-		if err := json.Unmarshal(call.Arguments, &args); err != nil {
+		if err := decodeToolArguments(call.Arguments, &args); err != nil {
 			return result(map[string]any{"ok": false, "error": "invalid arguments"}), nil, err
 		}
 		if args.Page < 1 {
@@ -560,11 +614,26 @@ func (s *Service) appendConversation(userID int64, id string, message Message) {
 	}
 }
 
+func decodeToolArguments(raw json.RawMessage, target any) error {
+	if !bytes.HasPrefix(bytes.TrimSpace(raw), []byte("{")) {
+		return errors.New("invalid arguments")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(target); err != nil {
+		return err
+	}
+	if err := decoder.Decode(new(any)); err != io.EOF {
+		return errors.New("invalid arguments")
+	}
+	return nil
+}
+
 func parseOrderID(raw json.RawMessage) (int64, error) {
 	var args struct {
 		OrderID int64 `json:"order_id"`
 	}
-	if err := json.Unmarshal(raw, &args); err != nil || args.OrderID <= 0 {
+	if err := decodeToolArguments(raw, &args); err != nil || args.OrderID <= 0 {
 		return 0, fmt.Errorf("order_id must be a positive integer")
 	}
 	return args.OrderID, nil
