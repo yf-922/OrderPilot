@@ -1,0 +1,311 @@
+{
+  "aggregateReductionPercent": 23.479442745497792,
+  "averageCompactBytes": 6871.833333333333,
+  "averageRawBytes": 7259.4,
+  "averageRemovedTurns": 2.066666666666667,
+  "averageWindowBytes": 5554.933333333333,
+  "cases": 30,
+  "meanCaseReductionPercent": 18.981203610941474,
+  "measurements": [
+    {
+      "id": "C01",
+      "scenario": "短对话查订单",
+      "turns": 2,
+      "rawBytes": 3932,
+      "compactBytes": 3932,
+      "windowBytes": 3932,
+      "removedTurns": 0,
+      "reductionPercent": 0
+    },
+    {
+      "id": "C02",
+      "scenario": "短对话查配送",
+      "turns": 3,
+      "rawBytes": 4997,
+      "compactBytes": 4802,
+      "windowBytes": 4802,
+      "removedTurns": 0,
+      "reductionPercent": 3.9023414048429057
+    },
+    {
+      "id": "C03",
+      "scenario": "短对话取消待确认",
+      "turns": 3,
+      "rawBytes": 4357,
+      "compactBytes": 4357,
+      "windowBytes": 4357,
+      "removedTurns": 0,
+      "reductionPercent": 0
+    },
+    {
+      "id": "C04",
+      "scenario": "短对话取消已发货订单",
+      "turns": 2,
+      "rawBytes": 3992,
+      "compactBytes": 3992,
+      "windowBytes": 3992,
+      "removedTurns": 0,
+      "reductionPercent": 0
+    },
+    {
+      "id": "C05",
+      "scenario": "短对话订单号纠错",
+      "turns": 3,
+      "rawBytes": 4432,
+      "compactBytes": 4432,
+      "windowBytes": 4432,
+      "removedTurns": 0,
+      "reductionPercent": 0
+    },
+    {
+      "id": "C06",
+      "scenario": "短对话政策无答案",
+      "turns": 2,
+      "rawBytes": 4219,
+      "compactBytes": 4195,
+      "windowBytes": 4195,
+      "removedTurns": 0,
+      "reductionPercent": 0.5688551789523584
+    },
+    {
+      "id": "C07",
+      "scenario": "筛选低库存后咨询配送",
+      "turns": 5,
+      "rawBytes": 6258,
+      "compactBytes": 5880,
+      "windowBytes": 5880,
+      "removedTurns": 0,
+      "reductionPercent": 6.040268456375839
+    },
+    {
+      "id": "C08",
+      "scenario": "浏览商品后转查订单",
+      "turns": 6,
+      "rawBytes": 6950,
+      "compactBytes": 6621,
+      "windowBytes": 5904,
+      "removedTurns": 1,
+      "reductionPercent": 15.050359712230216
+    },
+    {
+      "id": "C09",
+      "scenario": "缺货商品改查其他商品",
+      "turns": 6,
+      "rawBytes": 6830,
+      "compactBytes": 6330,
+      "windowBytes": 5739,
+      "removedTurns": 1,
+      "reductionPercent": 15.973645680819912
+    },
+    {
+      "id": "C10",
+      "scenario": "商品退款政策与订单追问",
+      "turns": 7,
+      "rawBytes": 7887,
+      "compactBytes": 7485,
+      "windowBytes": 5965,
+      "removedTurns": 2,
+      "reductionPercent": 24.369215164194244
+    },
+    {
+      "id": "C11",
+      "scenario": "商品查询超时后重问",
+      "turns": 6,
+      "rawBytes": 6556,
+      "compactBytes": 6300,
+      "windowBytes": 5760,
+      "removedTurns": 1,
+      "reductionPercent": 12.141549725442342
+    },
+    {
+      "id": "C12",
+      "scenario": "多次筛选不自动下单",
+      "turns": 7,
+      "rawBytes": 8937,
+      "compactBytes": 7815,
+      "windowBytes": 6382,
+      "removedTurns": 2,
+      "reductionPercent": 28.589011972697772
+    },
+    {
+      "id": "C13",
+      "scenario": "取消前先问退款",
+      "turns": 5,
+      "rawBytes": 5573,
+      "compactBytes": 5561,
+      "windowBytes": 5561,
+      "removedTurns": 0,
+      "reductionPercent": 0.2153238830073569
+    },
+    {
+      "id": "C14",
+      "scenario": "查商品后只取消指定订单",
+      "turns": 7,
+      "rawBytes": 7366,
+      "compactBytes": 6927,
+      "windowBytes": 5683,
+      "removedTurns": 2,
+      "reductionPercent": 22.848221558512083
+    },
+    {
+      "id": "C15",
+      "scenario": "取消意图改成暂不取消",
+      "turns": 8,
+      "rawBytes": 7614,
+      "compactBytes": 7346,
+      "windowBytes": 5498,
+      "removedTurns": 3,
+      "reductionPercent": 27.790911478854742
+    },
+    {
+      "id": "C16",
+      "scenario": "取消前发现订单已发货",
+      "turns": 6,
+      "rawBytes": 6776,
+      "compactBytes": 6569,
+      "windowBytes": 5963,
+      "removedTurns": 1,
+      "reductionPercent": 11.998229043683589
+    },
+    {
+      "id": "C17",
+      "scenario": "混淆订单后澄清取消目标",
+      "turns": 7,
+      "rawBytes": 6683,
+      "compactBytes": 6671,
+      "windowBytes": 5572,
+      "removedTurns": 2,
+      "reductionPercent": 16.6242705371839
+    },
+    {
+      "id": "C18",
+      "scenario": "取消准备后追问是否完成",
+      "turns": 8,
+      "rawBytes": 8208,
+      "compactBytes": 7696,
+      "windowBytes": 5683,
+      "removedTurns": 3,
+      "reductionPercent": 30.762670565302145
+    },
+    {
+      "id": "C19",
+      "scenario": "无权限订单不泄露信息",
+      "turns": 6,
+      "rawBytes": 6696,
+      "compactBytes": 6489,
+      "windowBytes": 5898,
+      "removedTurns": 1,
+      "reductionPercent": 11.917562724014337
+    },
+    {
+      "id": "C20",
+      "scenario": "不存在订单转人工",
+      "turns": 6,
+      "rawBytes": 7102,
+      "compactBytes": 6712,
+      "windowBytes": 6058,
+      "removedTurns": 1,
+      "reductionPercent": 14.700084483244156
+    },
+    {
+      "id": "C21",
+      "scenario": "提示注入不覆盖业务规则",
+      "turns": 6,
+      "rawBytes": 6953,
+      "compactBytes": 6624,
+      "windowBytes": 5907,
+      "removedTurns": 1,
+      "reductionPercent": 15.043865957140802
+    },
+    {
+      "id": "C22",
+      "scenario": "库存查询失败不误报成功",
+      "turns": 6,
+      "rawBytes": 6622,
+      "compactBytes": 6476,
+      "windowBytes": 5988,
+      "removedTurns": 1,
+      "reductionPercent": 9.574146783449109
+    },
+    {
+      "id": "C23",
+      "scenario": "反复纠正订单号再查询",
+      "turns": 7,
+      "rawBytes": 7404,
+      "compactBytes": 7136,
+      "windowBytes": 5854,
+      "removedTurns": 2,
+      "reductionPercent": 20.93462992976769
+    },
+    {
+      "id": "C24",
+      "scenario": "知识无答案后切换订单查询",
+      "turns": 6,
+      "rawBytes": 6688,
+      "compactBytes": 6469,
+      "windowBytes": 5878,
+      "removedTurns": 1,
+      "reductionPercent": 12.111244019138756
+    },
+    {
+      "id": "C25",
+      "scenario": "长对话浏览后取消",
+      "turns": 11,
+      "rawBytes": 10863,
+      "compactBytes": 9961,
+      "windowBytes": 6133,
+      "removedTurns": 6,
+      "reductionPercent": 43.54229954892755
+    },
+    {
+      "id": "C26",
+      "scenario": "长对话改为等待发货",
+      "turns": 11,
+      "rawBytes": 11005,
+      "compactBytes": 9871,
+      "windowBytes": 5978,
+      "removedTurns": 6,
+      "reductionPercent": 45.679236710586096
+    },
+    {
+      "id": "C27",
+      "scenario": "长对话取消已发货订单拒绝",
+      "turns": 11,
+      "rawBytes": 10678,
+      "compactBytes": 9898,
+      "windowBytes": 6133,
+      "removedTurns": 6,
+      "reductionPercent": 42.56415058999813
+    },
+    {
+      "id": "C28",
+      "scenario": "长对话订单号纠错",
+      "turns": 11,
+      "rawBytes": 10526,
+      "compactBytes": 9514,
+      "windowBytes": 5706,
+      "removedTurns": 6,
+      "reductionPercent": 45.79137374121223
+    },
+    {
+      "id": "C29",
+      "scenario": "长对话混合咨询与越权拒绝",
+      "turns": 11,
+      "rawBytes": 10399,
+      "compactBytes": 9729,
+      "windowBytes": 6058,
+      "removedTurns": 6,
+      "reductionPercent": 41.744398499855755
+    },
+    {
+      "id": "C30",
+      "scenario": "长对话切换意图并等待确认",
+      "turns": 12,
+      "rawBytes": 11279,
+      "compactBytes": 10365,
+      "windowBytes": 5757,
+      "removedTurns": 7,
+      "reductionPercent": 48.95824097881018
+    }
+  ]
+}

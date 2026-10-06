@@ -270,6 +270,12 @@ func messageBytes(message Message) int {
 }
 
 func compactToolResult(name string, raw json.RawMessage) string {
+	var outcome struct {
+		OK *bool `json:"ok"`
+	}
+	if json.Unmarshal(raw, &outcome) == nil && outcome.OK != nil && !*outcome.OK {
+		return string(raw)
+	}
 	if name == "search_knowledge" {
 		var payload struct {
 			Found bool             `json:"found"`
