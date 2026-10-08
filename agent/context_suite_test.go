@@ -134,10 +134,16 @@ func assertReplayWindow(t *testing.T, compact, window []Message) {
 	if len(window) == 0 || !reflect.DeepEqual(window[0], compact[0]) {
 		t.Fatal("lost system constraints")
 	}
+	stateOffset := 0
+	if len(window) > 1 && window[1].Name == "session_state" {
+		stateOffset = 1
+	}
 	// The retained history must be an exact suffix of whole user turns.
-	start := len(compact) - (len(window) - 1)
+	start := len(compact) - (len(window) - 1 - stateOffset)
 	if start < 1 || compact[start].Role != "user" || !reflect.DeepEqual(window[1:], compact[start:]) {
-		t.Fatal("not a complete-turn suffix")
+		if stateOffset == 0 || !reflect.DeepEqual(window[2:], compact[start:]) {
+			t.Fatal("not a complete-turn suffix")
+		}
 	}
 	for i := 1; i < len(window); i++ {
 		m := window[i]
@@ -154,7 +160,9 @@ func assertReplayWindow(t *testing.T, compact, window []Message) {
 		latest--
 	}
 	if !reflect.DeepEqual(window[len(window)-(len(compact)-latest):], compact[latest:]) {
-		t.Fatal("lost latest intent or observation")
+		if stateOffset == 0 || !reflect.DeepEqual(window[len(window)-(len(compact)-latest):], compact[latest:]) {
+			t.Fatal("lost latest intent or observation")
+		}
 	}
 }
 

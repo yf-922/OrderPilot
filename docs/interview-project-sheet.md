@@ -18,7 +18,7 @@
 **技术栈：** Go、Iris、MySQL、Redis、Function Calling、OpenAI-compatible Chat Completions、第三方兼容网关（请求模型标识 `grok-4.5`）、Iris 模板、原生 JavaScript/CSS、Playwright
 
 - 面向商品查询、订单查询和取消订单场景，在 Go + Iris 电商后端中实现订单客服 Agent；后端通过 OpenAI-compatible Chat Completions 接入第三方兼容网关，模型负责意图理解和工具选择，业务规则、权限校验与订单副作用由 Go Service 控制，模型不直接访问数据库。
-- 实现最多 5 轮的 Function Calling 编排；通过工具结果精简与完整轮次裁剪控制历史输入。在 30 个模拟客服会话回放中，基于 tiktoken / cl100k_base 分词估算，输入 Token 数平均降低 18.9%（逐例降幅算术平均），并校验近期业务约束与工具调用链完整性；平均 Token 数由 1979 降至 1516，不等同于 Grok 实际计费量或延迟降幅。
+- 实现最多 5 轮的 Function Calling 编排；将目标订单、保护约束和确认状态抽取为结构化会话状态，并结合工具结果精简与完整轮次裁剪控制历史输入。在 30 个模拟客服会话回放中，基于 tiktoken / cl100k_base 分词估算，输入 Token 数平均降低 14.4%（逐例降幅算术平均），同时保留结构化业务约束与工具调用链完整性；平均 Token 数由 1979 降至 1599，不等同于 Grok 实际计费量或延迟降幅。
 - 设计商品搜索、我的订单、订单状态、取消预检查 4 个严格 JSON Schema 工具；工具层二次校验参数、登录身份和订单归属，检测重复工具调用，区分参数/业务/暂时性错误，避免模型越权或死循环。
 - 增加 `search_knowledge` 混合检索工具，接入售后、退款、配送和地址规则知识库；生产适配层支持 OpenAI-compatible Embedding + pgvector HNSW 余弦检索，本地 CI 使用关键词与中文 n-gram 混合基线；业务数据由订单/商品工具查询，政策问题由 Agent 自主选择知识检索，返回文档来源和片段，未命中时明确无依据并转人工，形成受控 Agentic RAG。
 - 为取消订单引入 Human-in-the-loop：模型只能生成绑定用户与会话、5 分钟有效的单次确认令牌；确认接口再次校验后才执行取消和库存回滚。用户明确要求人工、投诉，或工具重复/超时/达到轮次上限时返回结构化人工协助信息。

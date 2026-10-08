@@ -5,57 +5,57 @@
   "scope": "UTF-8 JSON messages+tools envelope, not Grok tokenizer or billed usage",
   "averageRawTokens": 1978.9666666666667,
   "averageCompactTokens": 1887.2333333333333,
-  "averageWindowTokens": 1516.1,
+  "averageWindowTokens": 1598.6333333333334,
   "averageFieldSavedTokens": 91.73333333333335,
-  "averageHistorySavedTokens": 371.13333333333344,
-  "averageSavedTokens": 462.8666666666668,
-  "meanCaseReductionPercent": 18.869389733406987,
-  "aggregateReductionPercent": 23.389310919840327,
+  "averageHistorySavedTokens": 288.5999999999999,
+  "averageSavedTokens": 380.33333333333326,
+  "meanCaseReductionPercent": 14.387282061326054,
+  "aggregateReductionPercent": 19.218784213983724,
   "measurements": [
     {
       "id": "C01",
       "scenario": "短对话查订单",
       "rawTokens": 1064,
       "compactTokens": 1064,
-      "windowTokens": 1064,
-      "savedTokens": 0,
-      "reductionPercent": 0.0
+      "windowTokens": 1148,
+      "savedTokens": -84,
+      "reductionPercent": -7.894736842105263
     },
     {
       "id": "C02",
       "scenario": "短对话查配送",
       "rawTokens": 1370,
       "compactTokens": 1324,
-      "windowTokens": 1324,
-      "savedTokens": 46,
-      "reductionPercent": 3.3576642335766422
+      "windowTokens": 1408,
+      "savedTokens": -38,
+      "reductionPercent": -2.7737226277372264
     },
     {
       "id": "C03",
       "scenario": "短对话取消待确认",
       "rawTokens": 1170,
       "compactTokens": 1170,
-      "windowTokens": 1170,
-      "savedTokens": 0,
-      "reductionPercent": 0.0
+      "windowTokens": 1259,
+      "savedTokens": -89,
+      "reductionPercent": -7.6068376068376065
     },
     {
       "id": "C04",
       "scenario": "短对话取消已发货订单",
       "rawTokens": 1074,
       "compactTokens": 1074,
-      "windowTokens": 1074,
-      "savedTokens": 0,
-      "reductionPercent": 0.0
+      "windowTokens": 1159,
+      "savedTokens": -85,
+      "reductionPercent": -7.9143389199255125
     },
     {
       "id": "C05",
       "scenario": "短对话订单号纠错",
       "rawTokens": 1186,
       "compactTokens": 1186,
-      "windowTokens": 1186,
-      "savedTokens": 0,
-      "reductionPercent": 0.0
+      "windowTokens": 1270,
+      "savedTokens": -84,
+      "reductionPercent": -7.082630691399663
     },
     {
       "id": "C06",
@@ -71,216 +71,216 @@
       "scenario": "筛选低库存后咨询配送",
       "rawTokens": 1712,
       "compactTokens": 1624,
-      "windowTokens": 1624,
-      "savedTokens": 88,
-      "reductionPercent": 5.140186915887851
+      "windowTokens": 1708,
+      "savedTokens": 4,
+      "reductionPercent": 0.2336448598130841
     },
     {
       "id": "C08",
       "scenario": "浏览商品后转查订单",
       "rawTokens": 1908,
       "compactTokens": 1830,
-      "windowTokens": 1618,
-      "savedTokens": 290,
-      "reductionPercent": 15.19916142557652
+      "windowTokens": 1702,
+      "savedTokens": 206,
+      "reductionPercent": 10.79664570230608
     },
     {
       "id": "C09",
       "scenario": "缺货商品改查其他商品",
       "rawTokens": 1863,
       "compactTokens": 1747,
-      "windowTokens": 1580,
-      "savedTokens": 283,
-      "reductionPercent": 15.190552871712292
+      "windowTokens": 1664,
+      "savedTokens": 199,
+      "reductionPercent": 10.681696188942565
     },
     {
       "id": "C10",
       "scenario": "商品退款政策与订单追问",
       "rawTokens": 2144,
       "compactTokens": 2048,
-      "windowTokens": 1636,
-      "savedTokens": 508,
-      "reductionPercent": 23.69402985074627
+      "windowTokens": 1720,
+      "savedTokens": 424,
+      "reductionPercent": 19.776119402985074
     },
     {
       "id": "C11",
       "scenario": "商品查询超时后重问",
       "rawTokens": 1791,
       "compactTokens": 1731,
-      "windowTokens": 1579,
-      "savedTokens": 212,
-      "reductionPercent": 11.836962590731435
+      "windowTokens": 1663,
+      "savedTokens": 128,
+      "reductionPercent": 7.146845337800111
     },
     {
       "id": "C12",
       "scenario": "多次筛选不自动下单",
       "rawTokens": 2412,
       "compactTokens": 2152,
-      "windowTokens": 1755,
-      "savedTokens": 657,
-      "reductionPercent": 27.238805970149254
+      "windowTokens": 1839,
+      "savedTokens": 573,
+      "reductionPercent": 23.756218905472636
     },
     {
       "id": "C13",
       "scenario": "取消前先问退款",
       "rawTokens": 1507,
       "compactTokens": 1503,
-      "windowTokens": 1503,
-      "savedTokens": 4,
-      "reductionPercent": 0.26542800265428
+      "windowTokens": 1592,
+      "savedTokens": -85,
+      "reductionPercent": -5.640345056403451
     },
     {
       "id": "C14",
       "scenario": "查商品后只取消指定订单",
       "rawTokens": 2006,
       "compactTokens": 1904,
-      "windowTokens": 1539,
-      "savedTokens": 467,
-      "reductionPercent": 23.280159521435692
+      "windowTokens": 1628,
+      "savedTokens": 378,
+      "reductionPercent": 18.84346959122632
     },
     {
       "id": "C15",
       "scenario": "取消意图改成暂不取消",
       "rawTokens": 2077,
       "compactTokens": 2013,
-      "windowTokens": 1483,
-      "savedTokens": 594,
-      "reductionPercent": 28.598940779971112
+      "windowTokens": 1579,
+      "savedTokens": 498,
+      "reductionPercent": 23.976889744824266
     },
     {
       "id": "C16",
       "scenario": "取消前发现订单已发货",
       "rawTokens": 1844,
       "compactTokens": 1794,
-      "windowTokens": 1632,
-      "savedTokens": 212,
-      "reductionPercent": 11.496746203904555
+      "windowTokens": 1717,
+      "savedTokens": 127,
+      "reductionPercent": 6.887201735357918
     },
     {
       "id": "C17",
       "scenario": "混淆订单后澄清取消目标",
       "rawTokens": 1802,
       "compactTokens": 1798,
-      "windowTokens": 1492,
-      "savedTokens": 310,
-      "reductionPercent": 17.203107658157602
+      "windowTokens": 1581,
+      "savedTokens": 221,
+      "reductionPercent": 12.264150943396226
     },
     {
       "id": "C18",
       "scenario": "取消准备后追问是否完成",
       "rawTokens": 2227,
       "compactTokens": 2107,
-      "windowTokens": 1539,
-      "savedTokens": 688,
-      "reductionPercent": 30.89357880556803
+      "windowTokens": 1628,
+      "savedTokens": 599,
+      "reductionPercent": 26.897171082173326
     },
     {
       "id": "C19",
       "scenario": "无权限订单不泄露信息",
       "rawTokens": 1833,
       "compactTokens": 1783,
-      "windowTokens": 1616,
-      "savedTokens": 217,
-      "reductionPercent": 11.838516093835242
+      "windowTokens": 1700,
+      "savedTokens": 133,
+      "reductionPercent": 7.255864702673214
     },
     {
       "id": "C20",
       "scenario": "不存在订单转人工",
       "rawTokens": 1955,
       "compactTokens": 1863,
-      "windowTokens": 1671,
-      "savedTokens": 284,
-      "reductionPercent": 14.526854219948849
+      "windowTokens": 1733,
+      "savedTokens": 222,
+      "reductionPercent": 11.35549872122762
     },
     {
       "id": "C21",
       "scenario": "提示注入不覆盖业务规则",
       "rawTokens": 1902,
       "compactTokens": 1824,
-      "windowTokens": 1619,
-      "savedTokens": 283,
-      "reductionPercent": 14.879074658254469
+      "windowTokens": 1703,
+      "savedTokens": 199,
+      "reductionPercent": 10.46267087276551
     },
     {
       "id": "C22",
       "scenario": "库存查询失败不误报成功",
       "rawTokens": 1801,
       "compactTokens": 1765,
-      "windowTokens": 1628,
-      "savedTokens": 173,
-      "reductionPercent": 9.60577456968351
+      "windowTokens": 1712,
+      "savedTokens": 89,
+      "reductionPercent": 4.941699056079956
     },
     {
       "id": "C23",
       "scenario": "反复纠正订单号再查询",
       "rawTokens": 2018,
       "compactTokens": 1954,
-      "windowTokens": 1589,
-      "savedTokens": 429,
-      "reductionPercent": 21.25867195242815
+      "windowTokens": 1673,
+      "savedTokens": 345,
+      "reductionPercent": 17.09613478691774
     },
     {
       "id": "C24",
       "scenario": "知识无答案后切换订单查询",
       "rawTokens": 1840,
       "compactTokens": 1784,
-      "windowTokens": 1622,
-      "savedTokens": 218,
-      "reductionPercent": 11.847826086956522
+      "windowTokens": 1706,
+      "savedTokens": 134,
+      "reductionPercent": 7.282608695652174
     },
     {
       "id": "C25",
       "scenario": "长对话浏览后取消",
       "rawTokens": 2976,
       "compactTokens": 2764,
-      "windowTokens": 1682,
-      "savedTokens": 1294,
-      "reductionPercent": 43.48118279569893
+      "windowTokens": 1771,
+      "savedTokens": 1205,
+      "reductionPercent": 40.490591397849464
     },
     {
       "id": "C26",
       "scenario": "长对话改为等待发货",
       "rawTokens": 3020,
       "compactTokens": 2756,
-      "windowTokens": 1640,
-      "savedTokens": 1380,
-      "reductionPercent": 45.6953642384106
+      "windowTokens": 1736,
+      "savedTokens": 1284,
+      "reductionPercent": 42.51655629139073
     },
     {
       "id": "C27",
       "scenario": "长对话取消已发货订单拒绝",
       "rawTokens": 2929,
       "compactTokens": 2745,
-      "windowTokens": 1682,
-      "savedTokens": 1247,
-      "reductionPercent": 42.57425742574257
+      "windowTokens": 1767,
+      "savedTokens": 1162,
+      "reductionPercent": 39.672243086377605
     },
     {
       "id": "C28",
       "scenario": "长对话订单号纠错",
       "rawTokens": 2829,
       "compactTokens": 2591,
-      "windowTokens": 1539,
-      "savedTokens": 1290,
-      "reductionPercent": 45.59915164369035
+      "windowTokens": 1623,
+      "savedTokens": 1206,
+      "reductionPercent": 42.62990455991516
     },
     {
       "id": "C29",
       "scenario": "长对话混合咨询与越权拒绝",
       "rawTokens": 2873,
       "compactTokens": 2711,
-      "windowTokens": 1675,
-      "savedTokens": 1198,
-      "reductionPercent": 41.69857292029238
+      "windowTokens": 1759,
+      "savedTokens": 1114,
+      "reductionPercent": 38.77479986077271
     },
     {
       "id": "C30",
       "scenario": "长对话切换意图并等待确认",
       "rawTokens": 3081,
       "compactTokens": 2863,
-      "windowTokens": 1577,
-      "savedTokens": 1504,
-      "reductionPercent": 48.81531970139565
+      "windowTokens": 1666,
+      "savedTokens": 1415,
+      "reductionPercent": 45.92664719246998
     }
   ]
 }

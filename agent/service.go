@@ -38,6 +38,7 @@ var (
 type conversation struct {
 	UserID   int64
 	Messages []Message
+	State    SessionState
 	Updated  time.Time
 }
 
@@ -110,13 +111,14 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 		s.recordRequestEnd(false, 0, time.Since(startedAt))
 		return ChatResponse{}, ErrInvalidMessage
 	}
-	conversationID, history, err := s.loadConversation(userID, request.ConversationID)
+	conversationID, history, state, err := s.loadConversation(userID, request.ConversationID)
 	if err != nil {
 		s.recordRequestEnd(false, 0, time.Since(startedAt))
 		return ChatResponse{}, err
 	}
 	messages := append([]Message{{Role: "system", Content: systemPrompt}}, history...)
 	messages = append(messages, Message{Role: "user", Content: request.Message})
+	state.observeUser(request.Message)
 	traces := make([]ToolTrace, 0)
 	usage := Usage{}
 	var confirmation *Confirmation
@@ -125,10 +127,10 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 	var handoff *Handoff
 	if shouldEscalateToHuman(request.Message) {
 		handoff = newHandoff("explicit_human_request", request.Message, traces, "用户明确要求人工或表达投诉/强烈不满")
-		return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt), nil
+		return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt, state), nil
 	}
 	for turn := 0; turn < maxAgentTurns; turn++ {
-		completion, completeErr := s.provider.Complete(ctx, CompletionRequest{Messages: boundedContext(messages), Tools: toolDefinitions()})
+		completion, completeErr := s.provider.Complete(ctx, CompletionRequest{Messages: boundedContextWithState(messages, state), Tools: toolDefinitions()})
 		if completeErr != nil {
 			s.recordRequestEnd(false, usage.TotalTokens, time.Since(startedAt))
 			logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, false, completeErr.Error())
@@ -160,7 +162,7 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 				}
 			}
 			messages[len(messages)-1].Content = answer
-			s.saveConversation(userID, conversationID, messages[1:])
+			s.saveConversation(userID, conversationID, messages[1:], state)
 			s.recordRequestEnd(len(unresolved) == 0, usage.TotalTokens, time.Since(startedAt))
 			logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, len(unresolved) == 0, "")
 			return ChatResponse{TaskStatus: status, ConversationID: conversationID, Message: answer, Provider: s.provider.Name(), Model: s.provider.Model(), ToolCalls: traces, Confirmation: confirmation, Usage: usage, Handoff: handoff}, nil
@@ -180,7 +182,7 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 					messages = append(messages, Message{Role: "tool", Name: skipped.Name, ToolCallID: skipped.ID, Content: `{"ok":false,"errorType":"skipped","nextAction":"handoff"}`})
 				}
 				handoff = newHandoff("repeated_tool_call", request.Message, traces, "模型重复调用相同工具")
-				return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt), nil
+				return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt, state), nil
 			}
 			started := s.now()
 			result, action, toolErr := s.executeTool(ctx, userID, conversationID, call)
@@ -192,6 +194,7 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 			failureClass := classifyToolFailure(call.Name, result, toolErr)
 			trace := ToolTrace{Name: call.Name, Arguments: call.Arguments, Result: result, DurationMS: s.now().Sub(started).Milliseconds(), Success: toolErr == nil, FailureClass: failureClass, Attempts: attempts}
 			traces = append(traces, trace)
+			state.observeTool(call.Name, result)
 			if toolErr != nil {
 				unresolved[call.Name] = trace
 			} else {
@@ -221,15 +224,19 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 				if failureClass == "transient" {
 					handoff.Reason = "tool_unavailable"
 				}
-				return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt), nil
+				return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt, state), nil
 			}
 		}
 	}
 	handoff = newHandoff("max_turns", request.Message, traces, "达到模型推理轮次上限")
-	return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt), nil
+	return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt, state), nil
 }
 
 func boundedContext(messages []Message) []Message {
+	return boundedContextWithState(messages, extractSessionState(messages))
+}
+
+func boundedContextWithState(messages []Message, state SessionState) []Message {
 	if len(messages) < 2 {
 		return messages
 	}
@@ -237,7 +244,11 @@ func boundedContext(messages []Message) []Message {
 	for start > 1 && messages[start].Role != "user" {
 		start--
 	}
+	stateMessage := sessionStateMessage(state)
 	used := messageBytes(messages[0])
+	if stateMessage.Content != "" {
+		used += messageBytes(stateMessage)
+	}
 	for _, message := range messages[start:] {
 		used += messageBytes(message)
 	}
@@ -256,8 +267,11 @@ func boundedContext(messages []Message) []Message {
 		used += groupBytes
 		start = previous
 	}
-	result := make([]Message, 0, 1+len(messages)-start)
+	result := make([]Message, 0, 2+len(messages)-start)
 	result = append(result, messages[0])
+	if encoded := sessionStateMessage(state); encoded.Content != "" {
+		result = append(result, encoded)
+	}
 	return append(result, messages[start:]...)
 }
 
@@ -378,7 +392,8 @@ func shouldEscalateToHuman(message string) bool {
 	return false
 }
 
-func (s *Service) finishHandoff(userID int64, conversationID string, messages []Message, traces []ToolTrace, usage Usage, confirmation *Confirmation, handoff *Handoff, startedAt time.Time) ChatResponse {
+func (s *Service) finishHandoff(userID int64, conversationID string, messages []Message, traces []ToolTrace, usage Usage, confirmation *Confirmation, handoff *Handoff, startedAt time.Time, state SessionState) ChatResponse {
+	state.PendingOrderID = 0
 	if confirmation != nil {
 		s.mu.Lock()
 		delete(s.pending, confirmation.Token)
@@ -390,7 +405,7 @@ func (s *Service) finishHandoff(userID int64, conversationID string, messages []
 		last := traces[len(traces)-1]
 		answer = summarizeLocalTool(last.Name, string(last.Result)) + " 建议联系人工客服继续处理；我没有执行订单变更。"
 	}
-	s.saveConversation(userID, conversationID, append(messages[1:], Message{Role: "assistant", Content: answer}))
+	s.saveConversation(userID, conversationID, append(messages[1:], Message{Role: "assistant", Content: answer}), state)
 	s.recordRequestEnd(false, usage.TotalTokens, time.Since(startedAt))
 	logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, false, handoff.Reason)
 	return ChatResponse{TaskStatus: "handoff", ConversationID: conversationID, Message: answer, Provider: s.provider.Name(), Model: s.provider.Model(), ToolCalls: traces, Usage: usage, Handoff: handoff}
@@ -427,6 +442,10 @@ func (s *Service) Confirm(ctx context.Context, userID int64, request ConfirmRequ
 	}
 	s.mu.Lock()
 	s.metrics.Confirmations++
+	if chat, exists := s.chats[action.ConversationID]; exists && chat.UserID == userID {
+		chat.State.PendingOrderID = 0
+		chat.State.ConfirmedActions = append(chat.State.ConfirmedActions, ConfirmedAction{OrderID: action.OrderID, Action: "cancel_order"})
+	}
 	s.mu.Unlock()
 	message := fmt.Sprintf("订单 %d 已取消，库存已经恢复。", action.OrderID)
 	s.appendConversation(userID, action.ConversationID, Message{Role: "assistant", Content: message})
@@ -574,20 +593,20 @@ func (s *Service) executeTool(ctx context.Context, userID int64, conversationID 
 	}
 }
 
-func (s *Service) loadConversation(userID int64, conversationID string) (string, []Message, error) {
+func (s *Service) loadConversation(userID int64, conversationID string) (string, []Message, SessionState, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.cleanupLocked()
 	if conversationID == "" {
 		conversationID = randomID()
 		s.chats[conversationID] = &conversation{UserID: userID, Updated: s.now()}
-		return conversationID, nil, nil
+		return conversationID, nil, SessionState{}, nil
 	}
 	chat, ok := s.chats[conversationID]
 	if !ok || chat.UserID != userID {
-		return "", nil, ErrInvalidConversation
+		return "", nil, SessionState{}, ErrInvalidConversation
 	}
-	return conversationID, append([]Message(nil), chat.Messages...), nil
+	return conversationID, append([]Message(nil), chat.Messages...), chat.State, nil
 }
 
 func (s *Service) cleanupLocked() {
@@ -604,10 +623,17 @@ func (s *Service) cleanupLocked() {
 	}
 }
 
-func (s *Service) saveConversation(userID int64, id string, messages []Message) {
-	messages = boundedContext(append([]Message{{Role: "system", Content: systemPrompt}}, messages...))[1:]
+func (s *Service) saveConversation(userID int64, id string, messages []Message, state SessionState) {
+	bounded := boundedContextWithState(append([]Message{{Role: "system", Content: systemPrompt}}, messages...), state)
+	filtered := make([]Message, 0, len(bounded))
+	for _, message := range bounded {
+		if message.Name != "session_state" {
+			filtered = append(filtered, message)
+		}
+	}
+	messages = filtered[1:]
 	s.mu.Lock()
-	s.chats[id] = &conversation{UserID: userID, Messages: append([]Message(nil), messages...), Updated: s.now()}
+	s.chats[id] = &conversation{UserID: userID, Messages: append([]Message(nil), messages...), State: state, Updated: s.now()}
 	s.mu.Unlock()
 }
 
