@@ -39,3 +39,27 @@ func TestSessionStateDoesNotTreatUserClaimAsCompletedAction(t *testing.T) {
 		t.Fatalf("user claim became completed action: %+v", state)
 	}
 }
+
+func TestSessionStateSemanticParaphrases(t *testing.T) {
+	tests := []struct {
+		name, text            string
+		protected             int64
+		paused, addressLocked bool
+	}{
+		{"protect order", "订单18继续处理，但不要操作订单19", 19, false, false},
+		{"protect cancel", "订单18可以看，别取消19", 19, false, false},
+		{"pause", "先不要取消订单18，我再确认一下", 0, true, false},
+		{"address", "收货地址不能修改，订单18只查询", 0, false, true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			state := extractSessionState([]Message{{Role: "user", Content: test.text}})
+			if test.protected > 0 && (len(state.ProtectedOrderIDs) != 1 || state.ProtectedOrderIDs[0] != test.protected) {
+				t.Fatalf("protected order lost: %+v", state)
+			}
+			if state.CancelPaused != test.paused || state.AddressLocked != test.addressLocked {
+				t.Fatalf("constraint lost: %+v", state)
+			}
+		})
+	}
+}

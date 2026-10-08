@@ -54,7 +54,7 @@ func (s *SessionState) observeUser(text string) {
 			s.TargetOrderID = id
 		}
 	}
-	if strings.Contains(text, "地址不能改") || strings.Contains(text, "不可修改地址") || strings.Contains(text, "不要改地址") || strings.Contains(text, "不要修改地址") {
+	if strings.Contains(text, "地址不能改") || strings.Contains(text, "地址不能修改") || strings.Contains(text, "不可修改地址") || strings.Contains(text, "不要改地址") || strings.Contains(text, "不要修改地址") {
 		s.AddressLocked = true
 	}
 	if strings.Contains(text, "先别取消") || strings.Contains(text, "先不要取消") || strings.Contains(text, "暂不取消") || strings.Contains(text, "先不取消") {

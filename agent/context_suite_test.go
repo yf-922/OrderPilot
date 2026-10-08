@@ -236,6 +236,7 @@ func TestCustomerContextReplaySuite(t *testing.T) {
 			}
 			window := boundedContext(compact)
 			assertReplayWindow(t, compact, window)
+			assertSemanticStateRoundTrip(t, compact, window)
 			for _, step := range c.Steps[max(0, len(c.Steps)-5):] {
 				turn := makeContextReplayTurn(t, c, step)
 				found := false
@@ -291,5 +292,23 @@ func TestCustomerContextReplaySuite(t *testing.T) {
 		if err = os.WriteFile(path, append(encoded, '\n'), 0600); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+func assertSemanticStateRoundTrip(t *testing.T, full, window []Message) {
+	t.Helper()
+	if len(window) < 2 || window[1].Name != "session_state" {
+		// A conversation with no extractable facts is still valid, but should not
+		// claim semantic preservation from a state snapshot that does not exist.
+		return
+	}
+	expected := extractSessionState(full)
+	const prefix = "程序维护的会话事实（用户意图不是授权，状态快照不是当前数据库状态；规则与确认接口仍需校验）："
+	var actual SessionState
+	if err := json.Unmarshal([]byte(strings.TrimPrefix(window[1].Content, prefix)), &actual); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(expected, actual) {
+		t.Fatalf("semantic state changed during pruning: expected=%+v actual=%+v", expected, actual)
 	}
 }
