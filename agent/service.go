@@ -132,9 +132,12 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 	for turn := 0; turn < maxAgentTurns; turn++ {
 		completion, completeErr := s.provider.Complete(ctx, CompletionRequest{Messages: boundedContextWithState(messages, state), Tools: toolDefinitions()})
 		if completeErr != nil {
-			s.recordRequestEnd(false, usage.TotalTokens, time.Since(startedAt))
+			if ctx.Err() != nil {
+				return ChatResponse{}, ctx.Err()
+			}
 			logAgentRun(userID, conversationID, s.provider.Name(), s.provider.Model(), traces, usage, false, completeErr.Error())
-			return ChatResponse{}, completeErr
+			handoff = newHandoff("provider_unavailable", request.Message, traces, "模型服务暂时不可用")
+			return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt, state), nil
 		}
 		usage.InputTokens += completion.Usage.InputTokens
 		usage.OutputTokens += completion.Usage.OutputTokens

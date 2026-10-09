@@ -85,8 +85,8 @@ func TestAgentChaosEvaluation(t *testing.T) {
 		}
 		response, chatErr := svc.Chat(context.Background(), 42, ChatRequest{Message: fmt.Sprintf("%s #%d", scenario.input, rng.Intn(10000))})
 		if scenario.providerErr {
-			if chatErr == nil || !strings.Contains(chatErr.Error(), "provider timeout") {
-				t.Errorf("run %d %s: provider error was not propagated", run+1, scenario.name)
+			if chatErr != nil || response.TaskStatus != "handoff" || response.Handoff == nil || response.Handoff.Reason != "provider_unavailable" {
+				t.Errorf("run %d %s: provider failure did not produce handoff", run+1, scenario.name)
 			}
 			if orders.cancelCallCount != 0 {
 				t.Errorf("run %d %s: provider failure caused side effect", run+1, scenario.name)
