@@ -118,7 +118,14 @@ func main() {
 	order.Handle(new(controllers.OrderController))
 
 	// 注册订单客服 Agent。模型仅能调用受控业务工具，写操作需要用户二次确认。
-	agentService := agent.NewServiceWithRedisAndKnowledge(agent.NewProviderFromEnv(), orderService, productService, redisPool, agent.DefaultKnowledgeRetriever())
+	knowledgeCtx, knowledgeCancel := context.WithTimeout(ctx, 90*time.Second)
+	retriever, closeKnowledge, err := agent.NewKnowledgeRetrieverFromEnv(knowledgeCtx)
+	knowledgeCancel()
+	if err != nil {
+		log.Fatal("knowledge configuration failed:", err)
+	}
+	defer closeKnowledge()
+	agentService := agent.NewServiceWithRedisAndKnowledge(agent.NewProviderFromEnv(), orderService, productService, redisPool, retriever)
 	agentParty := app.Party("/agent")
 	agentParty.Use(common.RequireAuth)
 	agentMVC := mvc.New(agentParty)

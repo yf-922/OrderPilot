@@ -94,6 +94,11 @@ jobs:
           MYSQL_DATABASE: product
         run: go test ./tests -run TestConcurrentOrdersDoNotOversell -v
 
+      - name: Run pgvector database integration test
+        env:
+          PGVECTOR_TEST_DSN: postgres://rag:rag@127.0.0.1:5432/rag?sslmode=disable
+        run: go test ./agent -run '^TestPgvectorDatabaseRoundTrip$' -count=1 -v
+
       - name: Run HTTP API smoke tests
         run: python tests/api_smoke_test.py
 

@@ -7,9 +7,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 type Embedder interface {
@@ -61,6 +64,11 @@ func (e *OpenAICompatibleEmbedder) Embed(ctx context.Context, input string) ([]f
 	if len(output.Data) == 0 || len(output.Data[0].Embedding) == 0 {
 		return nil, fmt.Errorf("embedding provider returned no vector")
 	}
+	for _, value := range output.Data[0].Embedding {
+		if math.IsNaN(float64(value)) || math.IsInf(float64(value), 0) {
+			return nil, fmt.Errorf("embedding contains non-finite value")
+		}
+	}
 	return output.Data[0].Embedding, nil
 }
 
@@ -78,17 +86,36 @@ func (i *PgvectorIndexer) UpsertDocument(ctx context.Context, document Knowledge
 	if i.DB == nil || i.Embedder == nil {
 		return fmt.Errorf("pgvector indexer is not configured")
 	}
-	for index, content := range splitKnowledgeDocument(document.Content, 360) {
+	chunks := splitKnowledgeDocument(document.Content, 360)
+	if len(chunks) == 0 {
+		return fmt.Errorf("document is empty")
+	}
+	vectors := make([][]float32, len(chunks))
+	for index, content := range chunks {
 		vector, err := i.Embedder.Embed(ctx, document.Title+" "+content)
 		if err != nil {
 			return err
 		}
-		_, err = i.DB.ExecContext(ctx, `INSERT INTO knowledge_chunks(document_id,title,category,content,embedding,metadata) VALUES($1,$2,$3,$4,$5::vector,$6::jsonb)`, document.ID+fmt.Sprintf("#%d", index+1), document.Title, document.Category, content, vectorLiteral(vector), `{}`)
+		vectors[index] = vector
+	}
+	tx, err := i.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err = tx.ExecContext(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1,0))`, document.ID); err != nil {
+		return err
+	}
+	if _, err = tx.ExecContext(ctx, `DELETE FROM knowledge_chunks WHERE left(document_id,length($1)+1)=$1 || '#'`, document.ID); err != nil {
+		return err
+	}
+	for index, content := range chunks {
+		_, err = tx.ExecContext(ctx, `INSERT INTO knowledge_chunks(document_id,title,category,content,embedding,metadata) VALUES($1,$2,$3,$4,$5::vector,$6::jsonb)`, document.ID+fmt.Sprintf("#%d", index+1), document.Title, document.Category, content, vectorLiteral(vectors[index]), `{}`)
 		if err != nil {
 			return err
 		}
 	}
-	return nil
+	return tx.Commit()
 }
 
 func splitKnowledgeDocument(content string, size int) []string {
