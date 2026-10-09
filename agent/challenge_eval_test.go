@@ -83,7 +83,7 @@ func TestAgentChallengeEvaluation(t *testing.T) {
 		tc := cases[index]
 		orders := &orderServiceMock{order: &datamodels.Order{ID: 18, UserID: 42, OrderStatus: datamodels.OrderWait}}
 		products := &productServiceMock{items: []*datamodels.Product{{ID: 1, ProductName: "键盘", ProductNum: 3}}}
-		svc := NewService(provider, orders, products)
+		svc := NewServiceWithRedisAndKnowledge(provider, orders, products, nil, DefaultKnowledgeRetriever())
 		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 		started := time.Now()
 		response, chatErr := svc.Chat(ctx, 42, ChatRequest{Message: tc.Input})
@@ -91,6 +91,10 @@ func TestAgentChallengeEvaluation(t *testing.T) {
 		result := evalResult{ID: tc.ID, Tier: tc.Tier, Run: 1, Steps: len(response.ToolCalls), InputTokens: response.Usage.InputTokens, OutputTokens: response.Usage.OutputTokens, Tokens: response.Usage.TotalTokens, LatencyMS: time.Since(started).Milliseconds()}
 		result.ToolPathCorrect, result.ArgumentsCorrect = scoreToolDimensions(tc.Tool, tc.Tools, tc.Arguments, tc.ToolArguments, response.ToolCalls)
 		result.Answer, result.ObservedTools = response.Message, response.ToolCalls
+		result.TaskStatus = response.TaskStatus
+		if response.Handoff != nil {
+			result.HandoffReason = response.Handoff.Reason
+		}
 		if len(tc.Tools) > 0 {
 			result.Reason = scoreChallengeTools(tc, response, chatErr, orders)
 		} else {
@@ -118,6 +122,27 @@ func TestAgentChallengeEvaluation(t *testing.T) {
 		}
 	}
 	report := map[string]any{"schemaVersion": 1, "dataset": "challenge-v3", "seed": seed, "mode": mode, "provider": provider.Name(), "model": provider.Model(), "datasetCases": len(cases), "plannedRuns": maxCases, "stoppedEarly": stoppedEarly, "tokenBudget": tokenBudget, "consumedTokens": consumedTokens, "passed": passed, "total": len(results), "byTier": byTier, "results": results}
+	pathCorrect, handoffs, completed := 0, 0, 0
+	handoffReasons := map[string]int{}
+	for _, result := range results {
+		if result.ToolPathCorrect {
+			pathCorrect++
+		}
+		if result.TaskStatus == "handoff" {
+			handoffs++
+			handoffReasons[result.HandoffReason]++
+		}
+		if result.TaskStatus == "completed" {
+			completed++
+		}
+	}
+	report["metrics"] = map[string]any{
+		"toolPathCorrect": pathCorrect, "autoPassed": passed,
+		"handoffs": handoffs, "handoffReasons": handoffReasons,
+		"confirmedOperationsCompleted": completed, "denominator": len(results),
+	}
+	report["dataset"] = "challenge-v4"
+	report["scoringVersion"] = "explicit-refusal-v1"
 	encoded, err := json.Marshal(report)
 	if err != nil {
 		t.Fatal(err)
