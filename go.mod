@@ -1,8 +1,8 @@
 // module product 表示当前 Go 模块名称，项目内包导入都基于这个模块路径。
 module product
 
-// go 1.25 表示当前项目声明使用的 Go 版本。
-go 1.25
+// 使用已修复 HTTP 标准库漏洞的最低 Go 版本。
+go 1.26.9
 
 require (
 	// MySQL 官方驱动，用于 database/sql 连接 MySQL。
@@ -10,7 +10,7 @@ require (
 	github.com/gorilla/websocket v1.5.3 // indirect
 	// Iris 是当前项目使用的 Web 框架，负责路由、MVC、模板等能力。
 	github.com/kataras/iris/v12 v12.2.11
-	golang.org/x/crypto v0.22.0
+	golang.org/x/crypto v0.57.0
 )
 
 require (
@@ -60,9 +60,9 @@ require (
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/yosssi/ace v0.0.5 // indirect
 	golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0 // indirect
-	golang.org/x/net v0.24.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/net v0.60.0 // indirect
+	golang.org/x/sys v0.48.0 // indirect
+	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
