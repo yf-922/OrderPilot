@@ -98,7 +98,6 @@ func (r *PgKeywordRetriever) Retrieve(ctx context.Context, query string, topK in
 		return nil, err
 	}
 	defer rows.Close()
-	terms := tokenize(query)
 	out := []KnowledgeChunk{}
 	count := 0
 	for rows.Next() {
@@ -110,25 +109,10 @@ func (r *PgKeywordRetriever) Retrieve(ctx context.Context, query string, topK in
 		if count > 10000 {
 			return nil, fmt.Errorf("keyword corpus exceeds 10000 chunks")
 		}
-		c.Score = lexicalScore(terms, tokenize(c.Title+" "+c.Content))
-		if c.Score >= 0.5 {
-			out = append(out, c)
-		}
+		out = append(out, c)
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-	sort.Slice(out, func(i, j int) bool {
-		if out[i].Score == out[j].Score {
-			return out[i].DocumentID < out[j].DocumentID
-		}
-		return out[i].Score > out[j].Score
-	})
-	if topK <= 0 {
-		topK = 3
-	}
-	if len(out) > topK {
-		out = out[:topK]
-	}
-	return out, nil
+	return bm25Rank(query, out, topK), nil
 }

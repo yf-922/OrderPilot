@@ -12,7 +12,7 @@ import (
 func NewKnowledgeRetrieverFromEnv(ctx context.Context) (KnowledgeRetriever, func(), error) {
 	dsn := os.Getenv("PGVECTOR_DSN")
 	if dsn == "" {
-		return DefaultKnowledgeRetriever(), func() {}, nil
+		return &BM25Retriever{Chunks: policyChunks(policyDocuments())}, func() {}, nil
 	}
 	if os.Getenv("EMBEDDING_BASE_URL") == "" || os.Getenv("EMBEDDING_MODEL") == "" {
 		return nil, nil, fmt.Errorf("embedding URL and model are required with PGVECTOR_DSN")
@@ -38,13 +38,13 @@ CREATE INDEX IF NOT EXISTS knowledge_chunks_embedding_hnsw ON knowledge_chunks U
 	}
 	e := &OpenAICompatibleEmbedder{BaseURL: os.Getenv("EMBEDDING_BASE_URL"), APIKey: os.Getenv("EMBEDDING_API_KEY"), Model: os.Getenv("EMBEDDING_MODEL")}
 	indexer := &PgvectorIndexer{DB: db, Embedder: e}
-	for _, document := range defaultKnowledgeDocuments() {
+	for _, document := range policyDocuments() {
 		if err = indexer.UpsertDocument(ctx, document); err != nil {
 			closeDB()
 			return nil, nil, fmt.Errorf("knowledge indexing failed: %w", err)
 		}
 	}
-	return &FallbackRetriever{Primary: &RRFRetriever{Lexical: &PgKeywordRetriever{DB: db}, Vector: &PgvectorRetriever{DB: db, Embedder: e}}, Fallback: DefaultKnowledgeRetriever()}, closeDB, nil
+	return &FallbackRetriever{Primary: &RRFRetriever{Lexical: &PgKeywordRetriever{DB: db}, Vector: &PgvectorRetriever{DB: db, Embedder: e}}, Fallback: &BM25Retriever{Chunks: policyChunks(policyDocuments())}}, closeDB, nil
 }
 
 type FallbackRetriever struct{ Primary, Fallback KnowledgeRetriever }

@@ -87,6 +87,9 @@ func (i *PgvectorIndexer) UpsertDocument(ctx context.Context, document Knowledge
 		return fmt.Errorf("pgvector indexer is not configured")
 	}
 	chunks := splitKnowledgeDocument(document.Content, 360)
+	if strings.Contains(document.Content, "适用条件：") {
+		chunks = splitRuleUnits(document.Content)
+	}
 	if len(chunks) == 0 {
 		return fmt.Errorf("document is empty")
 	}
