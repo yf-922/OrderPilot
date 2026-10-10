@@ -60,6 +60,8 @@ type Service struct {
 	metrics   Metrics
 	redisPool *radix.Pool
 	retriever KnowledgeRetriever
+	// Internal evaluation switch; production defaults to bounded context.
+	disableContextCompression bool
 }
 
 type ChatService interface {
@@ -130,7 +132,7 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 		return s.finishHandoff(userID, conversationID, messages, traces, usage, confirmation, handoff, startedAt, state), nil
 	}
 	for turn := 0; turn < maxAgentTurns; turn++ {
-		completion, completeErr := s.provider.Complete(ctx, CompletionRequest{Messages: boundedContextWithState(messages, state), Tools: toolDefinitions()})
+		completion, completeErr := s.provider.Complete(ctx, CompletionRequest{Messages: s.modelContext(messages, state), Tools: toolDefinitions()})
 		if completeErr != nil {
 			if ctx.Err() != nil {
 				return ChatResponse{}, ctx.Err()
@@ -208,6 +210,9 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 				confirmation = action
 			}
 			observation := compactToolResult(call.Name, result)
+			if s.disableContextCompression {
+				observation = string(result)
+			}
 			if toolErr != nil {
 				var original map[string]any
 				_ = json.Unmarshal(result, &original)
@@ -237,6 +242,17 @@ func (s *Service) Chat(ctx context.Context, userID int64, request ChatRequest) (
 
 func boundedContext(messages []Message) []Message {
 	return boundedContextWithState(messages, extractSessionState(messages))
+}
+
+func (s *Service) modelContext(messages []Message, state SessionState) []Message {
+	if !s.disableContextCompression {
+		return boundedContextWithState(messages, state)
+	}
+	out := append([]Message(nil), messages[:1]...)
+	if snapshot := sessionStateMessage(state); snapshot.Content != "" {
+		out = append(out, snapshot)
+	}
+	return append(out, messages[1:]...)
 }
 
 func boundedContextWithState(messages []Message, state SessionState) []Message {
@@ -627,7 +643,7 @@ func (s *Service) cleanupLocked() {
 }
 
 func (s *Service) saveConversation(userID int64, id string, messages []Message, state SessionState) {
-	bounded := boundedContextWithState(append([]Message{{Role: "system", Content: systemPrompt}}, messages...), state)
+	bounded := s.modelContext(append([]Message{{Role: "system", Content: systemPrompt}}, messages...), state)
 	filtered := make([]Message, 0, len(bounded))
 	for _, message := range bounded {
 		if message.Name != "session_state" {

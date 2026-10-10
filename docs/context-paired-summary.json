@@ -1,0 +1,117 @@
+{
+  "completedPairs": 30,
+  "plannedPairs": 30,
+  "arms": {
+    "off": {
+      "rubricPassed": 23,
+      "toolPathCorrect": 29,
+      "states": {
+        "answered": 26,
+        "awaiting_confirmation": 1,
+        "handoff": 3
+      },
+      "handoffReasons": {
+        "tool_business_rule": 3
+      },
+      "inputTokens": 86032,
+      "outputTokens": 8499,
+      "totalTokens": 94531,
+      "failures": [
+        {
+          "id": "C05",
+          "reason": "unexpected tool search_knowledge"
+        },
+        {
+          "id": "C11",
+          "reason": "argument keyword=键盘, want "
+        },
+        {
+          "id": "C16",
+          "reason": "argument keyword=商品, want "
+        },
+        {
+          "id": "C19",
+          "reason": "tool search_products arguments mismatch"
+        },
+        {
+          "id": "C20",
+          "reason": "tool search_products arguments mismatch"
+        },
+        {
+          "id": "C26",
+          "reason": "argument order_id=1, want 0"
+        },
+        {
+          "id": "C27",
+          "reason": "argument order_id=1, want -1"
+        }
+      ]
+    },
+    "on": {
+      "rubricPassed": 22,
+      "toolPathCorrect": 27,
+      "states": {
+        "answered": 26,
+        "awaiting_confirmation": 1,
+        "handoff": 3
+      },
+      "handoffReasons": {
+        "tool_business_rule": 3
+      },
+      "inputTokens": 69242,
+      "outputTokens": 9636,
+      "totalTokens": 78878,
+      "failures": [
+        {
+          "id": "C11",
+          "reason": "argument keyword=键盘, want "
+        },
+        {
+          "id": "C12",
+          "reason": "unexpected tool search_knowledge"
+        },
+        {
+          "id": "C14",
+          "reason": "tool path mismatch: got [], want get_order_status"
+        },
+        {
+          "id": "C16",
+          "reason": "argument keyword=键盘, want "
+        },
+        {
+          "id": "C19",
+          "reason": "tool count=3, want 2"
+        },
+        {
+          "id": "C20",
+          "reason": "tool search_products arguments mismatch"
+        },
+        {
+          "id": "C26",
+          "reason": "argument order_id=1, want 0"
+        },
+        {
+          "id": "C27",
+          "reason": "argument order_id=1, want -1"
+        }
+      ]
+    }
+  },
+  "inputComparison": {
+    "eligiblePairs": 30,
+    "meanOff": 2867.733333333333,
+    "meanOn": 2308.0666666666666,
+    "aggregateReduction": 0.1951599404872606,
+    "meanPerPairReduction": 0.17902990421132037
+  },
+  "pairedPassChanges": {
+    "lost": [
+      "C12",
+      "C14"
+    ],
+    "gained": [
+      "C05"
+    ],
+    "exactMcNemarP": 1
+  }
+}
