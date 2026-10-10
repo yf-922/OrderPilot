@@ -44,7 +44,7 @@ CREATE INDEX IF NOT EXISTS knowledge_chunks_embedding_hnsw ON knowledge_chunks U
 			return nil, nil, fmt.Errorf("knowledge indexing failed: %w", err)
 		}
 	}
-	return &FallbackRetriever{Primary: &PgvectorRetriever{DB: db, Embedder: e}, Fallback: DefaultKnowledgeRetriever()}, closeDB, nil
+	return &FallbackRetriever{Primary: &RRFRetriever{Lexical: &PgKeywordRetriever{DB: db}, Vector: &PgvectorRetriever{DB: db, Embedder: e}}, Fallback: DefaultKnowledgeRetriever()}, closeDB, nil
 }
 
 type FallbackRetriever struct{ Primary, Fallback KnowledgeRetriever }

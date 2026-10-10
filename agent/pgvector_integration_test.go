@@ -95,4 +95,12 @@ func TestPgvectorDatabaseRoundTrip(t *testing.T) {
 		}
 	}
 	t.Log("HTTP embedding -> transactional indexing -> pgvector retrieval: 30/30 source assertions passed")
+	fused := &RRFRetriever{Lexical: &PgKeywordRetriever{DB: db}, Vector: r}
+	for n := 0; n < 30; n++ {
+		chunks, err := fused.Retrieve(ctx, "退款", 1)
+		if err != nil || len(chunks) != 1 || chunks[0].DocumentID != "fixture-refund#1" {
+			t.Fatalf("RRF database case %d: %v %v", n, chunks, err)
+		}
+	}
+	t.Log("Keyword + HTTP embedding + pgvector + RRF: 30/30 database assertions passed")
 }
