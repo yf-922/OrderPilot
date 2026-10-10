@@ -1,0 +1,1008 @@
+[
+  {
+    "id": "DEV1",
+    "query": "取消待发货订单适用什么规则",
+    "expected": [
+      "cancel-pending"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV2",
+    "query": "仓库拣货取消适用什么规则",
+    "expected": [
+      "cancel-picking"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV3",
+    "query": "已发货取消适用什么规则",
+    "expected": [
+      "cancel-shipped"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV4",
+    "query": "重复取消适用什么规则",
+    "expected": [
+      "cancel-repeat"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV5",
+    "query": "组合订单部分取消适用什么规则",
+    "expected": [
+      "cancel-partial"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV6",
+    "query": "未支付取消适用什么规则",
+    "expected": [
+      "cancel-unpaid"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV7",
+    "query": "预售尾款取消适用什么规则",
+    "expected": [
+      "cancel-preorder"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV8",
+    "query": "数字商品取消适用什么规则",
+    "expected": [
+      "cancel-digital"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV9",
+    "query": "余额退款适用什么规则",
+    "expected": [
+      "refund-wallet"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV10",
+    "query": "银行卡退款适用什么规则",
+    "expected": [
+      "refund-card"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV11",
+    "query": "第三方支付退款适用什么规则",
+    "expected": [
+      "refund-third"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV12",
+    "query": "混合支付退款适用什么规则",
+    "expected": [
+      "refund-split"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV13",
+    "query": "部分退款适用什么规则",
+    "expected": [
+      "refund-partial"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV14",
+    "query": "优惠券退款适用什么规则",
+    "expected": [
+      "refund-coupon"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV15",
+    "query": "退款失败适用什么规则",
+    "expected": [
+      "refund-failed"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV16",
+    "query": "退款到账承诺适用什么规则",
+    "expected": [
+      "refund-guarantee"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV17",
+    "query": "未拆封退货适用什么规则",
+    "expected": [
+      "return-unused"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV18",
+    "query": "已使用退货适用什么规则",
+    "expected": [
+      "return-used"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV19",
+    "query": "质量问题退货适用什么规则",
+    "expected": [
+      "return-defect"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV20",
+    "query": "型号尺码换货适用什么规则",
+    "expected": [
+      "return-size"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV21",
+    "query": "定制商品退货适用什么规则",
+    "expected": [
+      "return-custom"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV22",
+    "query": "生鲜商品退货适用什么规则",
+    "expected": [
+      "return-fresh"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV23",
+    "query": "退货运费适用什么规则",
+    "expected": [
+      "return-freight"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV24",
+    "query": "退货在途适用什么规则",
+    "expected": [
+      "return-transit"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV25",
+    "query": "普通配送时效适用什么规则",
+    "expected": [
+      "delivery-normal"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV26",
+    "query": "配送延误适用什么规则",
+    "expected": [
+      "delivery-delay"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV27",
+    "query": "加急配送适用什么规则",
+    "expected": [
+      "delivery-urgent"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV28",
+    "query": "丢件调查适用什么规则",
+    "expected": [
+      "delivery-lost"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV29",
+    "query": "未发货改地址适用什么规则",
+    "expected": [
+      "address-pending"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV30",
+    "query": "拣货中改地址适用什么规则",
+    "expected": [
+      "address-picking"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV31",
+    "query": "已发货改地址适用什么规则",
+    "expected": [
+      "address-shipped"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEV32",
+    "query": "他人订单地址适用什么规则",
+    "expected": [
+      "address-other"
+    ],
+    "split": "calibration",
+    "kind": "standard"
+  },
+  {
+    "id": "DEVU0",
+    "query": "会员积分兑换",
+    "expected": [],
+    "split": "calibration",
+    "kind": "unknown"
+  },
+  {
+    "id": "DEVU1",
+    "query": "发票开具流程",
+    "expected": [],
+    "split": "calibration",
+    "kind": "unknown"
+  },
+  {
+    "id": "DEVU2",
+    "query": "优惠券购买渠道",
+    "expected": [],
+    "split": "calibration",
+    "kind": "unknown"
+  },
+  {
+    "id": "DEVU3",
+    "query": "账户注销步骤",
+    "expected": [],
+    "split": "calibration",
+    "kind": "unknown"
+  },
+  {
+    "id": "DEVU4",
+    "query": "商品价格调整",
+    "expected": [],
+    "split": "calibration",
+    "kind": "unknown"
+  },
+  {
+    "id": "DEVU5",
+    "query": "贷款分期利率",
+    "expected": [],
+    "split": "calibration",
+    "kind": "unknown"
+  },
+  {
+    "id": "DEVU6",
+    "query": "会员等级升级",
+    "expected": [],
+    "split": "calibration",
+    "kind": "unknown"
+  },
+  {
+    "id": "DEVU7",
+    "query": "店铺加盟条件",
+    "expected": [],
+    "split": "calibration",
+    "kind": "unknown"
+  },
+  {
+    "id": "T1A",
+    "query": "我的包裹还没出库，想不要了",
+    "expected": [
+      "cancel-pending"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T1B",
+    "query": "请解释 CAN-101，待发货没有拣货能撤销购买吗",
+    "expected": [
+      "cancel-pending"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T2A",
+    "query": "仓库已经在打包，能停下来吗",
+    "expected": [
+      "cancel-picking"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T2B",
+    "query": "请解释 CAN-102，已经开始拣货如何取消",
+    "expected": [
+      "cancel-picking"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T3A",
+    "query": "东西已经寄出了还能不要吗",
+    "expected": [
+      "cancel-shipped"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T3B",
+    "query": "请解释 CAN-103，已发货能不能直接取消订单",
+    "expected": [
+      "cancel-shipped"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T4A",
+    "query": "我又点了一次取消会多退库存吗",
+    "expected": [
+      "cancel-repeat"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T4B",
+    "query": "请解释 CAN-104，已取消订单再次操作怎么办",
+    "expected": [
+      "cancel-repeat"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T5A",
+    "query": "一单买了两件只想撤掉没发的那件",
+    "expected": [
+      "cancel-partial"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T5B",
+    "query": "请解释 CAN-105，部分商品未发货能单独取消吗",
+    "expected": [
+      "cancel-partial"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T6A",
+    "query": "我还没付钱能关掉订单吗",
+    "expected": [
+      "cancel-unpaid"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T6B",
+    "query": "请解释 CAN-106，未支付订单关闭要退款吗",
+    "expected": [
+      "cancel-unpaid"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T7A",
+    "query": "只交了订金不想继续买了",
+    "expected": [
+      "cancel-preorder"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T7B",
+    "query": "请解释 CAN-107，预售未付尾款如何撤单",
+    "expected": [
+      "cancel-preorder"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T8A",
+    "query": "兑换码已经用过了还能撤销吗",
+    "expected": [
+      "cancel-digital"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T8B",
+    "query": "请解释 CAN-108，数字商品激活之后能取消吗",
+    "expected": [
+      "cancel-digital"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T9A",
+    "query": "账户里的钱买的，退款回哪里",
+    "expected": [
+      "refund-wallet"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T9B",
+    "query": "请解释 REF-201，余额支付取消后款项退哪",
+    "expected": [
+      "refund-wallet"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T10A",
+    "query": "卡里扣的钱多久回来",
+    "expected": [
+      "refund-card"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T10B",
+    "query": "请解释 REF-202，银行卡退款怎么查到账",
+    "expected": [
+      "refund-card"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T11A",
+    "query": "用支付平台付的钱怎么退",
+    "expected": [
+      "refund-third"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T11B",
+    "query": "请解释 REF-203，第三方支付退款能换账户吗",
+    "expected": [
+      "refund-third"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T12A",
+    "query": "钱包和卡一起付的钱退到哪",
+    "expected": [
+      "refund-split"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T12B",
+    "query": "请解释 REF-204，混合支付退款如何拆分",
+    "expected": [
+      "refund-split"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T13A",
+    "query": "只退了一件怎么返钱",
+    "expected": [
+      "refund-partial"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T13B",
+    "query": "请解释 REF-205，部分退款会把整单钱退掉吗",
+    "expected": [
+      "refund-partial"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T14A",
+    "query": "用了券退单能拿到券的钱吗",
+    "expected": [
+      "refund-coupon"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T14B",
+    "query": "请解释 REF-206，优惠券金额能退款成现金吗",
+    "expected": [
+      "refund-coupon"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T15A",
+    "query": "退钱显示失败该怎么办",
+    "expected": [
+      "refund-failed"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T15B",
+    "query": "请解释 REF-207，退款失败可以直接再退一次吗",
+    "expected": [
+      "refund-failed"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T16A",
+    "query": "能保证现在钱就回来吗",
+    "expected": [
+      "refund-guarantee"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T16B",
+    "query": "请解释 REF-208，退款能承诺立即到账吗",
+    "expected": [
+      "refund-guarantee"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T17A",
+    "query": "包装还没打开想寄回去",
+    "expected": [
+      "return-unused"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T17B",
+    "query": "请解释 RET-301，未拆封商品怎么退货",
+    "expected": [
+      "return-unused"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T18A",
+    "query": "用过几天不喜欢还能退吗",
+    "expected": [
+      "return-used"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T18B",
+    "query": "请解释 RET-302，已经使用非质量原因能退货吗",
+    "expected": [
+      "return-used"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T19A",
+    "query": "收到东西坏了怎么寄回",
+    "expected": [
+      "return-defect"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T19B",
+    "query": "请解释 RET-303，质量故障退货需要什么证据",
+    "expected": [
+      "return-defect"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T20A",
+    "query": "尺码太小能换大的吗",
+    "expected": [
+      "return-size"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T20B",
+    "query": "请解释 RET-304，型号不合适换货先查什么",
+    "expected": [
+      "return-size"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T21A",
+    "query": "刻了名字不喜欢能退吗",
+    "expected": [
+      "return-custom"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T21B",
+    "query": "请解释 RET-305，定制商品能无理由退货吗",
+    "expected": [
+      "return-custom"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T22A",
+    "query": "收到水果烂了怎么办",
+    "expected": [
+      "return-fresh"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T22B",
+    "query": "请解释 RET-306，生鲜变质退货需要什么",
+    "expected": [
+      "return-fresh"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T23A",
+    "query": "寄回去的邮费谁出",
+    "expected": [
+      "return-freight"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T23B",
+    "query": "请解释 RET-307，个人原因和质量退货运费一样吗",
+    "expected": [
+      "return-freight"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T24A",
+    "query": "我寄回去了怎么还没返钱",
+    "expected": [
+      "return-transit"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T24B",
+    "query": "请解释 RET-308，退货运输中什么时候退款",
+    "expected": [
+      "return-transit"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T25A",
+    "query": "一般多久能送过来",
+    "expected": [
+      "delivery-normal"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T25B",
+    "query": "请解释 DEL-401，普通配送时间能保证吗",
+    "expected": [
+      "delivery-normal"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T26A",
+    "query": "快递好几天没动静了",
+    "expected": [
+      "delivery-delay"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T26B",
+    "query": "请解释 DEL-402，物流不更新可以直接判丢件吗",
+    "expected": [
+      "delivery-delay"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T27A",
+    "query": "能不能让快递快点送",
+    "expected": [
+      "delivery-urgent"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T27B",
+    "query": "请解释 DEL-403，能自动给配送加急吗",
+    "expected": [
+      "delivery-urgent"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T28A",
+    "query": "快递公司说找不到包裹了",
+    "expected": [
+      "delivery-lost"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T28B",
+    "query": "请解释 DEL-404，确认丢件以后怎么处理",
+    "expected": [
+      "delivery-lost"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T29A",
+    "query": "还没寄出想换收货地方",
+    "expected": [
+      "address-pending"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T29B",
+    "query": "请解释 ADR-501，未发货可以直接让Agent改地址吗",
+    "expected": [
+      "address-pending"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T30A",
+    "query": "正在打包还能换地址吗",
+    "expected": [
+      "address-picking"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T30B",
+    "query": "请解释 ADR-502，拣货阶段修改地址有什么限制",
+    "expected": [
+      "address-picking"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T31A",
+    "query": "包裹在路上想送别处",
+    "expected": [
+      "address-shipped"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T31B",
+    "query": "请解释 ADR-503，已发货修改地址应该找谁",
+    "expected": [
+      "address-shipped"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "T32A",
+    "query": "朋友的收货地址能告诉我吗",
+    "expected": [
+      "address-other"
+    ],
+    "split": "test",
+    "kind": "paraphrase"
+  },
+  {
+    "id": "T32B",
+    "query": "请解释 ADR-504，他人口头授权能查询地址吗",
+    "expected": [
+      "address-other"
+    ],
+    "split": "test",
+    "kind": "identifier"
+  },
+  {
+    "id": "TU0",
+    "query": "怎么用积分买礼品",
+    "expected": [],
+    "split": "test",
+    "kind": "unknown"
+  },
+  {
+    "id": "TU1",
+    "query": "报销用的发票怎么开",
+    "expected": [],
+    "split": "test",
+    "kind": "unknown"
+  },
+  {
+    "id": "TU2",
+    "query": "如何成为店铺会员",
+    "expected": [],
+    "split": "test",
+    "kind": "unknown"
+  },
+  {
+    "id": "TU3",
+    "query": "删除账号个人资料",
+    "expected": [],
+    "split": "test",
+    "kind": "unknown"
+  },
+  {
+    "id": "TU4",
+    "query": "黄金首饰回收价格",
+    "expected": [],
+    "split": "test",
+    "kind": "unknown"
+  },
+  {
+    "id": "TU5",
+    "query": "信用贷款如何申请",
+    "expected": [],
+    "split": "test",
+    "kind": "unknown"
+  },
+  {
+    "id": "TU6",
+    "query": "这个店如何招商加盟",
+    "expected": [],
+    "split": "test",
+    "kind": "unknown"
+  },
+  {
+    "id": "TU7",
+    "query": "买保险有哪些要求",
+    "expected": [],
+    "split": "test",
+    "kind": "unknown"
+  },
+  {
+    "id": "TM1",
+    "query": "订单还没发货取消后银行卡的钱怎么退",
+    "expected": [
+      "cancel-pending",
+      "refund-card"
+    ],
+    "split": "test",
+    "kind": "multi_condition"
+  },
+  {
+    "id": "TM2",
+    "query": "包裹已经寄出想取消并更换收货地",
+    "expected": [
+      "cancel-shipped",
+      "address-shipped"
+    ],
+    "split": "test",
+    "kind": "multi_condition"
+  },
+  {
+    "id": "TM3",
+    "query": "退一件商品并且咨询退货邮费",
+    "expected": [
+      "refund-partial",
+      "return-freight"
+    ],
+    "split": "test",
+    "kind": "multi_condition"
+  }
+]
