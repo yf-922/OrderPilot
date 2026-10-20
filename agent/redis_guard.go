@@ -20,6 +20,39 @@ const (
 	toolBucketRefillPerSecond = 1
 )
 
+func sessionStateKey(userID int64, conversationID string) string {
+	return fmt.Sprintf("agent:session-state:%d:%s", userID, conversationID)
+}
+
+func (s *Service) persistSessionState(userID int64, conversationID string, state SessionState) {
+	if s.redisPool == nil || conversationID == "" {
+		return
+	}
+	encoded, err := json.Marshal(state)
+	if err != nil {
+		return
+	}
+	// Compare the version inside Redis before replacing the snapshot. This
+	// prevents a slower request from overwriting a newer state update.
+	const script = `local current=redis.call('GET',KEYS[1]); if current then local old=cjson.decode(current); if tonumber(old.version or 0)>tonumber(ARGV[2]) then return 0 end end; redis.call('SET',KEYS[1],ARGV[1],'EX',ARGV[3]); return 1`
+	_ = s.redisPool.Do(radix.Cmd(nil, "EVAL", script, "1", sessionStateKey(userID, conversationID), string(encoded), strconv.FormatInt(state.Version, 10), strconv.Itoa(int(time.Hour/time.Second))))
+}
+
+func (s *Service) loadSessionState(userID int64, conversationID string) (SessionState, bool) {
+	if s.redisPool == nil || conversationID == "" {
+		return SessionState{}, false
+	}
+	var encoded string
+	if err := s.redisPool.Do(radix.Cmd(&encoded, "GET", sessionStateKey(userID, conversationID))); err != nil || encoded == "" {
+		return SessionState{}, false
+	}
+	var state SessionState
+	if json.Unmarshal([]byte(encoded), &state) != nil {
+		return SessionState{}, false
+	}
+	return state, true
+}
+
 const tokenBucketScript = `
 local values = redis.call('HMGET', KEYS[1], 'tokens', 'updated')
 local capacity = tonumber(ARGV[1])

@@ -23,29 +23,37 @@ type ToolDefinition struct {
 }
 
 type CompletionRequest struct {
-	Messages []Message
-	Tools    []ToolDefinition
+	ResponseFormat  map[string]any
+	Messages        []Message
+	Tools           []ToolDefinition
+	MaxOutputTokens int
+	Temperature     *float64
 }
 
 type Usage struct {
-	InputTokens  int `json:"inputTokens,omitempty"`
-	OutputTokens int `json:"outputTokens,omitempty"`
-	TotalTokens  int `json:"totalTokens,omitempty"`
+	InputTokens        int  `json:"inputTokens,omitempty"`
+	OutputTokens       int  `json:"outputTokens,omitempty"`
+	TotalTokens        int  `json:"totalTokens,omitempty"`
+	CachedTokens       int  `json:"cachedTokens,omitempty"`
+	CacheUsageReported bool `json:"cacheUsageReported,omitempty"`
 }
 
 type Completion struct {
-	Message Message
-	Usage   Usage
+	Message          Message
+	Usage            Usage
+	NetworkLatencyMS int64
+	RetryCount       int
 }
 
 type ToolTrace struct {
-	Name         string          `json:"name"`
-	Arguments    json.RawMessage `json:"arguments"`
-	Result       json.RawMessage `json:"result"`
-	DurationMS   int64           `json:"durationMs"`
-	Success      bool            `json:"success"`
-	FailureClass string          `json:"failureClass,omitempty"`
-	Attempts     int             `json:"attempts,omitempty"`
+	Name               string          `json:"name"`
+	Arguments          json.RawMessage `json:"arguments"`
+	Result             json.RawMessage `json:"result"`
+	DurationMS         int64           `json:"durationMs"`
+	Success            bool            `json:"success"`
+	FailureClass       string          `json:"failureClass,omitempty"`
+	Attempts           int             `json:"attempts,omitempty"`
+	FatalBusinessError bool            `json:"fatalBusinessError,omitempty"`
 }
 
 type Handoff struct {
@@ -99,4 +107,9 @@ type Metrics struct {
 	Confirmations      int64   `json:"confirmations"`
 	TotalTokens        int64   `json:"totalTokens"`
 	AverageLatencyMS   float64 `json:"averageLatencyMs"`
+	JevEvaluations     int64   `json:"jevEvaluations"`
+	JevShortCircuits   int64   `json:"jevShortCircuits"`
+	JevConfirmPaths    int64   `json:"jevConfirmPaths"`
+	JevEscalations     int64   `json:"jevEscalations"`
+	JevLatencyP95MS    float64 `json:"jevLatencyP95Ms"`
 }

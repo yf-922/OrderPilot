@@ -1,59 +1,73 @@
-# 接口自动化测试说明
+# 测试说明：重点客服 Agent
 
-本目录用于补充 `goworks-product` 后端项目的轻量级接口自动化测试实践，重点覆盖用户、商品、订单三个模块中已经暴露的 HTTP 接口。
+所有命令在仓库根目录执行。结果索引见 [test_report.md](test_report.md)，指标、分母和原始证据见 [客服性能报告](../docs/customer-service-performance.md)。
 
-当前项目通过 Docker Compose 自动准备 MySQL、Redis、用户和商品种子数据。测试分成单元、并发集成和 HTTP 集成三类：
+## 无付费模型的本地验证
 
-1. Go 单元测试：密码、鉴权、请求参数和服务层规则。
-2. Go 集成测试：真实 MySQL 事务、并发防超卖和幂等重试。
-3. HTTP 集成测试：健康检查、鉴权、搜索分页、订单取消返库和幂等冲突。
-4. Agent 测试：工具路由、会话隔离、人工确认、提示注入回归和浏览器端取消返库。
+先安装 Go（版本见 `go.mod`）、Python 与 Tokenizer 依赖。在一个终端运行：
 
-## 运行前提
-
-1. 启动后端服务：
-
-```bash
-go run ./backend
+```powershell
+python -m pip install -r tests/requirements-context.txt
+python tokenizer/server.py
 ```
 
-2. 默认服务地址：
+在另一个干净的 PowerShell 终端运行，不导入含真实 Key 的 `.env`：
 
-```text
-http://localhost:8080
+```powershell
+$env:AI_PROVIDER='local'
+$env:JEV_EXTERNAL_ENABLED='false'
+$env:AGENT_TOKENIZER_URL='http://127.0.0.1:8091'
+$env:AGENT_ABLATION_REPORT_PATH='../docs/local-verification-ablation.md'
+go test ./... -count=1 -timeout 5m
+go vet ./...
+go build ./...
+go test -race ./... -count=1 -timeout 5m
 ```
 
-3. 执行接口冒烟测试：
+Windows 的 race 检查需要支持的 C 编译器和 CGO；没有相应环境时不能把未执行当成通过。自动测试不会自动读取 `.env`，但会继承当前终端已有环境。
 
-```bash
+## 客服测试分类
+
+| 分类 | 入口 | 验证内容 |
+| --- | --- | --- |
+| 编排与安全回归 | `agent/*_test.go` | 会话隔离、工具参数校验、取消确认、重复操作、业务错误、提示注入 |
+| 上下文压缩 | `agent/context_engine_test.go` | 状态、脱水、切分边界和 Token 预算回归 |
+| 离线因子消融 | `TestAgentContextAndJevAblation` | 相同 fixture 的策略对照；不代表线上质量 |
+| 官方 Jev 客户端 | `agent/jev_external_test.go` | 本地 HTTP 假服务下的协议与回退；真实冒烟需显式开关 |
+| 既有线上证据审计 | `TestTypeSafeEfficiencyEvidenceOffline` | 仅读本地 Checkpoint，核验使用量、轨迹与可比性 |
+| 本地 HTTP 压测 | `TestAgentLocalHTTPLoad` | 真实 HTTP、鉴权、控制器与本地 Agent，6 万次单轮请求 |
+
+```powershell
+go test ./agent -run '^TestTypeSafeEfficiencyEvidenceOffline$' -count=1 -v
+
+$env:AGENT_LOCAL_LOAD='1'
+go test ./backend/web/controllers -run '^TestAgentLocalHTTPLoad$' -count=1 -v -timeout 3m
+```
+
+压测默认写 `docs/agent-local-load.json`，可用 `AGENT_LOCAL_LOAD_REPORT` 换路径。压测不构造远程模型客户端，不涉及真实订单事务，不代表线上容量。
+
+## 真实依赖集成与页面测试
+
+```powershell
+docker compose up -d --build --wait
+# 真实 MySQL 并发防超卖和幂等；需核对连接参数。
+$env:INTEGRATION_TEST='1'
+$env:MYSQL_HOST='127.0.0.1'
+$env:MYSQL_DATABASE='product'
+go test ./tests -count=1 -v
+
 python tests/api_smoke_test.py
+npm ci
+npx playwright install chromium
 npm run test:e2e
 ```
 
-如需指定服务地址：
+HTTP 冒烟覆盖鉴权、商品搜索分页、下单、取消返库及幂等冲突；浏览器测试覆盖页面与客服确认交互。默认后端 `http://localhost:8080`，可通过 `BASE_URL` 调整。启动后端或 Compose 不等于这些测试已执行。CI 入口为 [.github/workflows/api-smoke.yml](../.github/workflows/api-smoke.yml)。
 
-```bash
-BASE_URL=http://localhost:8080 python tests/api_smoke_test.py
-```
+## 付费评测必须显式启用
 
-## 覆盖范围
+以下开关可能触发真实模型调用；运行全量测试前应确保未启用：
 
-当前自动化脚本覆盖以下类型：
+`AGENT_EVAL_LIVE`、`AGENT_CHALLENGE_LIVE`、`AGENT_CONTEXT_PAIRED_LIVE`、`AGENT_CONTEXT_LIVE`、`AGENT_REDUCED_LIVE`、`AGENT_STRICT_LIVE`、`AGENT_STRICT_PREFLIGHT`、`AGENT_STRICT_RESUME`、`TYPESAFE_EFFICIENCY_LIVE`、`JEV_LIVE_SMOKE`。
 
-- 用户登录缺少用户名或密码
-- 用户创建缺少必要字段
-- 商品更新缺少 ID 或库存格式错误
-- 订单创建缺少用户 ID 或商品 ID
-
-脚本会区分以下结果类型：
-
-- `PASSED`：状态码和响应内容均符合预期。
-- `PARAM_ERROR_UNEXPECTED`：接口返回参数错误，但不符合当前用例预期。
-- `AUTH_ERROR_UNEXPECTED`：出现未预期的鉴权错误。
-- `SERVER_ERROR_UNEXPECTED`：出现服务端错误。
-- `ENV_UNAVAILABLE`：服务未启动或网络不可达。
-- `ASSERTION_FAILED`：状态码或响应内容断言失败。
-
-## CI 说明
-
-仓库的 `.github/workflows/api-smoke.yml` 会构建完整 Docker Compose 环境，执行真实 MySQL 并发测试和 HTTP 冒烟测试；本地可用 `make integration` 复现。
+线上测试须先确定数据集、Provider、并发、Token 上限和 Checkpoint 版本，不能为了更新 README 重跑。完整历史与压缩组必须使用同源样本；任务完成、工具执行成功、工具选择准确分别统计；包含所有实际调用及回退用量。不要将本地 fixture 输出标记为真实模型实测。

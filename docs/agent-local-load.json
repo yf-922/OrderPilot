@@ -1,0 +1,89 @@
+{
+  "generated_at": "2026-10-20T12:59:29+08:00",
+  "go": "go1.27.0",
+  "os": "windows",
+  "arch": "amd64",
+  "logical_cpus": 20,
+  "gomaxprocs": 20,
+  "scope": "loopback HTTP + actual Iris controller/auth + shared Agent + local Provider; no Redis/MySQL/remote LLM/tokenizer; single-turn fresh sessions; closed-loop; 20 warmup requests per row excluded",
+  "rows": [
+    {
+      "scenario": "policy_rag",
+      "concurrency": 1,
+      "requests": 10000,
+      "failures": 0,
+      "successful_tools": 10000,
+      "seconds": 2.7724737,
+      "requests_per_second": 3606.887235756285,
+      "avg_ms": 0.26302639999999927,
+      "p50_ms": 0,
+      "p95_ms": 1,
+      "p99_ms": 1
+    },
+    {
+      "scenario": "policy_rag",
+      "concurrency": 8,
+      "requests": 10000,
+      "failures": 0,
+      "successful_tools": 10000,
+      "seconds": 1.0358524,
+      "requests_per_second": 9653.885051576846,
+      "avg_ms": 0.7619266000000052,
+      "p50_ms": 0.565,
+      "p95_ms": 1.115,
+      "p99_ms": 1.595
+    },
+    {
+      "scenario": "policy_rag",
+      "concurrency": 32,
+      "requests": 10000,
+      "failures": 0,
+      "successful_tools": 10000,
+      "seconds": 0.8494598,
+      "requests_per_second": 11772.187453720588,
+      "avg_ms": 2.3730246999999633,
+      "p50_ms": 2.113,
+      "p95_ms": 4.27,
+      "p99_ms": 5.346
+    },
+    {
+      "scenario": "human_short_circuit",
+      "concurrency": 1,
+      "requests": 10000,
+      "failures": 0,
+      "successful_tools": 0,
+      "seconds": 1.0865784,
+      "requests_per_second": 9203.201536124774,
+      "avg_ms": 0.10152390000000056,
+      "p50_ms": 0,
+      "p95_ms": 0.999,
+      "p99_ms": 1
+    },
+    {
+      "scenario": "human_short_circuit",
+      "concurrency": 8,
+      "requests": 10000,
+      "failures": 0,
+      "successful_tools": 0,
+      "seconds": 0.4322687,
+      "requests_per_second": 23133.75916414952,
+      "avg_ms": 0.27226029999999873,
+      "p50_ms": 0,
+      "p95_ms": 0.985,
+      "p99_ms": 1.058
+    },
+    {
+      "scenario": "human_short_circuit",
+      "concurrency": 32,
+      "requests": 10000,
+      "failures": 0,
+      "successful_tools": 0,
+      "seconds": 0.3971173,
+      "requests_per_second": 25181.47660653414,
+      "avg_ms": 0.8999380999999672,
+      "p50_ms": 0.999,
+      "p95_ms": 2.002,
+      "p99_ms": 3.293
+    }
+  ]
+}

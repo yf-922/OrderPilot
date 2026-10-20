@@ -12,6 +12,12 @@ type Provider interface {
 	Model() string
 }
 
+// TokenCounter is implemented by online providers that know the tokenizer
+// used for their request envelope.
+type TokenCounter interface {
+	CountTokens(CompletionRequest) (int, error)
+}
+
 func NewProviderFromEnv() Provider {
 	apiKey := firstNonEmpty(os.Getenv("AI_API_KEY"), os.Getenv("XAI_API_KEY"), os.Getenv("GROK_API_KEY"))
 	provider := strings.ToLower(strings.TrimSpace(os.Getenv("AI_PROVIDER")))

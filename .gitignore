@@ -11,3 +11,12 @@ test-results/
 playwright-report/
 coverage
 coverage.out
+# 本机运行日志与进程标记；正式评测 JSON/Markdown 仍显式纳入版本管理。
+/*.out
+/*.log
+/*.pid
+/docs/local-verification-ablation.md
+/docs/local-validation.txt
+/agent/tests/
+/docs/*partial.json
+/docs/*before-resume-fix.json

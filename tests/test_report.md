@@ -1,43 +1,17 @@
-# Verification report
+# 测试结果索引
 
-Verified locally on Windows on 2026-09-09 with Go 1.27.1 and Docker Engine 29.6.2.
+更新日期：2026-10-20。正式性能与质量口径统一见 [客服评测与性能报告](../docs/customer-service-performance.md)。
 
-| Gate | Result |
-|---|---|
-| `go test ./...` | Passed |
-| `go test -race ./...` | Passed |
-| `go vet ./...` | Passed |
-| `go build ./...` | Passed |
-| Docker multi-stage build | Passed |
-| MySQL / Redis / API health checks | Passed |
-| HTTP authentication and ownership checks | Passed |
-| Product search and pagination | Passed |
-| Order idempotent retry | Passed |
-| Order cancellation and stock restore | Passed |
-| Concurrent oversell prevention | Passed |
-| Concurrent same-key deduplication | Passed |
-| Python API suite | 8/8 passed |
-| `staticcheck ./...` | Passed |
-| `govulncheck ./...` | 0 reachable vulnerabilities |
-| Agent intent evaluation | 9/9 passed, including prompt-injection regression |
-| Agent user/conversation isolation | Passed |
-| Agent cancellation confirmation and replay protection | Passed |
-| Playwright desktop/mobile workflow | Passed |
+| 验证 | 本次结果 | 证据 / 说明 |
+| --- | --- | --- |
+| `go test ./... -count=1 -timeout 5m` | 通过 | 本地 Provider；常驻 Tokenizer；真实 MySQL 集成条件跳过 |
+| `go vet ./...` | 通过 | 全项目静态检查 |
+| `go build ./...` | 通过 | 全项目构建 |
+| `go test -race ./... -count=1 -timeout 5m` | 通过 | 全项目竞态检查，付费测试关闭 |
+| 本地 HTTP 并发 | 60,000 次统计请求，0 失败 | [JSON](../docs/agent-local-load.json)，无远程模型、数据库、Redis |
+| 历史上下文线上消融 | 保留原始记录，未重复付费调用 | [报告](../docs/strict-core4-v3-resumed/final-resumed-report.md) |
+| 官方 Jev 三组实验 | 保留原始记录，未重复付费调用 | [报告](../docs/typesafe-efficiency-v1/findings.md) |
 
-The concurrency tests run against a real MySQL 8 container. They verify that two 60-unit purchases against stock 100 yield exactly one success and final stock 40, and that simultaneous requests sharing one idempotency key return one order ID and deduct stock once.
+离线消融运行器的统计用于 fixture 回归，不等于真实 Provider 的性能。历史离线输出中曾使用绕过率作为冗余工具收益代理，此口径不用于 README 或简历。生成新的离线报告时请设置 `AGENT_ABLATION_REPORT_PATH` 为独立路径，避免覆盖此索引。
 
-## Agent golden-set regression (2026-09-25)
-
-The versioned `order-support-v1` fixture has 30 cases, each repeated 5 times with fresh mock business state. The deterministic local Provider passed 150/150 runs: basic 75/75, varied 45/45, adversarial/exception 30/30. The scorer checks tool path, exact argument keys/values, authenticated-user binding, tool outcome, answer keyword, confirmation state, and absence of cancellation before confirmation. A machine-readable JSON report was saved outside the repository.
-
-`go test ./...` and `go test -race ./...` passed after the evaluation change. No Grok key was configured, so no live-model score, token cost, or meaningful latency comparison is claimed. The local Provider reports zero tokens and sub-millisecond timings because it does not call a model. This fixture does not yet measure multi-tool task planning or tool timeout recovery.
-
-## Grok gateway smoke (2026-09-25)
-
-The Go project was aligned with TravelMind's configured compatible gateway and `grok-4.6` model. A direct Chat Completions request succeeded. Two single-run live Agent cases passed: `B04` order-status lookup (1 tool step, 1697 tokens, 4951 ms) and `A02` cancellation request that still requires confirmation (1 tool step, 2066 tokens, 10141 ms). These are smoke checks, not a full-model pass rate or stability estimate. Reports were saved outside the repository.
-
-An exploratory run against the same gateway with `grok-4.5` used a hard 50,000-token budget and stopped safely after 23 of 150 planned runs (51,366 reported tokens due to the final request crossing the guard). It passed 12/23 completed runs; B04 was stable at 5/5, while B01/B02/B03 exposed argument and intent instability. This is intentionally reported as a truncated diagnostic, not as a full accuracy score. The cases are tracked in `agent/testdata/bad_cases.json`; no pricing was inferred because the gateway did not publish rates in its model response.
-
-The Agent runtime dashboard and `GET /agent/metrics` endpoint were added and covered by service tests. Metrics are process-local cumulative counters; they reset on restart and are not a replacement for durable Prometheus/OpenTelemetry storage.
-
-The first B01 recheck after backend argument normalization passed the exact tool/parameter assertion in 4/5 runs; the one failure was only an overly specific final-answer phrase, so the fixture now checks the stable business term “订单” while retaining exact tool assertions. B03 still showed unnecessary extra status lookups in 3/5 runs; this remains an open process-quality bad case after adding a minimum-tool instruction, and was not counted as fixed without another recheck.
+执行方式、付费开关与测试边界见 [测试说明](README.md)。

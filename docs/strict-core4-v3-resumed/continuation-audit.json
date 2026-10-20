@@ -1,0 +1,7 @@
+{
+  "createdUTC": "2026-10-17T03:37:15.2740004Z",
+  "policy": "retain all attempts; no retry of failed calls; unexecuted suffix after infrastructure failure excluded from latency/efficiency; matched complete cases reported separately; original source manifest unchanged",
+  "predecessor": "../docs/strict-core4-v3/checkpoint.json",
+  "predecessorHash": "57b07bb03f10ce42608b7434b055094456d686f25daab7640863cf8645e87b95",
+  "resumeSourceHash": "830e6acadbdb86627de916c2cfc27aad3db277ea131da3e4eba21a79bd9b0575"
+}

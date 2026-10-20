@@ -1,7 +1,7 @@
 SHELL := pwsh.exe
 GO := go
 
-.PHONY: fmt test race vet build security integration e2e up down ci coverage coverage-html
+.PHONY: fmt test race vet build security integration e2e up down ci coverage coverage-html ablation local-load
 
 fmt:
 	$(GO)fmt -w agent backend common datamodels repositories services tests
@@ -14,6 +14,12 @@ coverage: test
 
 coverage-html: test
 	$(GO) tool cover -html=coverage.out -o coverage.html
+
+ablation:
+	$$env:AGENT_ABLATION_REPORT_PATH='../docs/local-verification-ablation.md'; $(GO) test ./agent -run TestAgentContextAndJevAblation -count=1 -v
+
+local-load:
+	$$env:AGENT_LOCAL_LOAD='1'; $(GO) test ./backend/web/controllers -run '^TestAgentLocalHTTPLoad$$' -count=1 -v -timeout 3m
 
 race:
 	$(GO) test -race ./...

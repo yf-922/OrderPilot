@@ -1,0 +1,26 @@
+{
+  "decision": {
+    "route_action": "PROCEED_MAIN_LLM",
+    "intent_category": "PRODUCT_QUERY",
+    "target_order_id": 0,
+    "confirm_decision": "NONE",
+    "allowed_tools": [
+      "search_products",
+      "search_knowledge"
+    ],
+    "reason": "",
+    "source": "typesafe",
+    "model": "jev-1.13.0",
+    "usage": {
+      "inputTokens": 863,
+      "outputTokens": 188,
+      "totalTokens": 1051
+    },
+    "confidence": 1
+  },
+  "latency_ms": 1243,
+  "main_model_requests": 0,
+  "requests": 1,
+  "time": "2026-10-17T05:36:55Z",
+  "usage_reported_in_decision": true
+}
