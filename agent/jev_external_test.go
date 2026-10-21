@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -19,9 +20,9 @@ func TestJevExternalGateway(t *testing.T) {
 			if scenario == "timeout" {
 				t.Setenv("JEV_TIMEOUT_MS", "5")
 			}
-			calls := 0
+			var calls atomic.Int64
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				calls++
+				calls.Add(1)
 				if r.URL.Path != "/v1/systemone" || r.Header.Get("Authorization") != "Bearer typesafe-test-key" {
 					t.Error("TypeSafe 路径或独立凭据错误")
 				}
@@ -86,8 +87,8 @@ func TestJevExternalGateway(t *testing.T) {
 				OwnedOrderIDs: []int64{10086}, PendingConfirm: &ConfirmTokenSnapshot{Token: "private-confirm-secret", OrderID: 10086, ExpiresAt: time.Now().Add(time.Minute).Unix()}, PendingCancel: ConfirmTokenInfo{Token: "legacy-secret"},
 			}}
 			decision := engine.Evaluate(context.Background(), input)
-			if calls != 1 || decision.RouteAction != RouteProceedMainLLM {
-				t.Fatalf("calls=%d decision=%+v", calls, decision)
+			if calls.Load() != 1 || decision.RouteAction != RouteProceedMainLLM {
+				t.Fatalf("calls=%d decision=%+v", calls.Load(), decision)
 			}
 			if scenario == "success" {
 				if decision.Source != "typesafe" || decision.TargetOrderID != 10086 || len(decision.AllowedTools) != 2 || decision.Usage.TotalTokens != 580 {
@@ -98,7 +99,7 @@ func TestJevExternalGateway(t *testing.T) {
 			}
 			engine.Evaluate(context.Background(), JevInput{UserQuery: "查询我的订单列表"})
 			engine.Evaluate(context.Background(), JevInput{UserQuery: "确认取消", State: input.State})
-			if calls != 1 {
+			if calls.Load() != 1 {
 				t.Fatal("普通请求和确定性确认不应调用外部 Jev")
 			}
 		})

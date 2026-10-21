@@ -3,7 +3,6 @@ package controllers
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"math"
 	"net/http"
@@ -174,5 +173,5 @@ func TestAgentLocalHTTPLoad(t *testing.T) {
 	for _, r := range rows {
 		t.Logf("%s c=%d n=%d errors=%d RPS=%.1f avg=%.3f p50=%.3f p95=%.3f p99=%.3f", r.Scenario, r.Concurrency, r.Requests, r.Failures, r.RPS, r.Avg, r.P50, r.P95, r.P99)
 	}
-	t.Log(fmt.Sprintf("JSON report: %s", path))
+	t.Logf("JSON report: %s", path)
 }

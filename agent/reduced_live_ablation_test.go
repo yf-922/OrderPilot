@@ -92,9 +92,7 @@ func TestReducedLiveAblation(t *testing.T) {
 			Records []EvalRecord `json:"records"`
 		}
 		if json.Unmarshal(existing, &checkpoint) == nil {
-			for _, item := range checkpoint.Records {
-				records = append(records, item)
-			}
+			records = append(records, checkpoint.Records...)
 		}
 	}
 	completed := make(map[string]bool, len(records))

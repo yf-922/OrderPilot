@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 )
 
 type longContextTurn struct {
@@ -146,8 +145,4 @@ func MatchToolArguments(expected, observed map[string]any) bool {
 		}
 	}
 	return true
-}
-
-func latencyParts(total time.Duration, context, jev, llm time.Duration) (int64, int64, int64, int64) {
-	return total.Milliseconds(), context.Milliseconds(), jev.Milliseconds(), llm.Milliseconds()
 }

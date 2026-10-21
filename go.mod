@@ -2,7 +2,7 @@
 module product
 
 // 使用已修复 HTTP 标准库漏洞的最低 Go 版本。
-go 1.26.9
+go 1.26.10
 
 require (
 	// MySQL 官方驱动，用于 database/sql 连接 MySQL。

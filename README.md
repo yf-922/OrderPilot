@@ -71,7 +71,7 @@
 
 ### 1. 无模型 Key 的本地演示
 
-要求 Docker Compose；本机开发需要 Go **1.26.9+**，以 [go.mod](go.mod) 为准。
+要求 Docker Compose；本机开发需要 Go **1.26.10+**（若使用 1.27 系列，需 1.27.3+ 安全补丁），以 [go.mod](go.mod) 为准。
 
 ```bash
 cp .env.example .env

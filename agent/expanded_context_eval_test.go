@@ -146,15 +146,6 @@ func expandedToolPayload(name string, c expandedEvalCase, turn int) string {
 	}
 }
 
-func strictExpandedTokenCount(t *testing.T, messages []Message) int {
-	t.Helper()
-	count, err := (&CompatibleProvider{}).CountTokens(CompletionRequest{Messages: messages, Tools: toolDefinitions()})
-	if err != nil {
-		t.Fatalf("strict tokenizer unavailable: %v", err)
-	}
-	return count
-}
-
 func TestExpandedOfflineContextEvaluation(t *testing.T) {
 	cases := expandedContextCases()
 	if len(cases) != 100 {
